@@ -18,3 +18,9 @@
 - 执行 `npm install` 时发现当前 Node v18.20.8 不满足 Nuxt 依赖要求，补充 `.nvmrc` 和 `package.json engines`，要求 Node >=20.19.0。
 - 安装 Node v22.22.2 后重新执行 `npm install` 成功，`nuxt prepare` 正常生成类型文件。
 - 执行 `npm run build` 验证 Nuxt 项目骨架，生产构建成功。
+- 安装原生 arm64 Docker CLI 与 Colima，建立本地 Docker 打包环境。
+- 新增 `Dockerfile` 与 `.dockerignore`，用于构建 Nuxt 3 生产镜像并运行 `.output/server/index.mjs`。
+- 本地成功构建 `linux/amd64` Docker 镜像 `super-agent-console:0.1.0`，并导出为 `/private/tmp/super-agent-console-0.1.0-linux-amd64.tar`，用于导入香港服务器 K3S。
+- 将镜像推送到 GitHub Container Registry：`ghcr.io/duanhejin/super-agent-console:0.1.0` 与 `ghcr.io/duanhejin/super-agent-console:latest`。
+- 新增 `docs/deploy-ghcr-k3s.md` 和 `scripts/build-and-push-ghcr.sh`，沉淀 Docker build、GHCR push 与 K3S 拉取镜像部署流程。
+- 更新 GHCR 构建推送脚本的版本策略：默认从 GHCR 最大 semver tag 自动递增 patch，patch 达到 `99` 后进位到下一个 minor 版本。
