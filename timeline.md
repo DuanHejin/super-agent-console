@@ -15,3 +15,5 @@
 - 执行 `npm run build` 验证 Nuxt 项目骨架，生产构建成功。
 - 初始化本地 git 仓库并提交项目骨架，提交信息为 `feat(scaffold): initialize nuxt agent console`。
 - 尝试检查 GitHub 远程仓库 `git@github.com:duanhejin/super-agent-console.git`，因 SSH host key verification 失败，停止远程推送，等待手动配置或提供远程地址。
+- 使用 GitHub CLI 创建远程私有仓库 `https://github.com/DuanHejin/super-agent-console`，并自动配置 `origin`。
+- 推送本地 `main` 分支时 GitHub HTTPS 传输报错 `Error in the HTTP2 framing layer`，按约定停止重试，等待手动推送或后续重新执行。
