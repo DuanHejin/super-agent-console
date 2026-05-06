@@ -13,3 +13,5 @@
 - 执行 `npm install` 时发现当前 Node v18.20.8 不满足 Nuxt 依赖要求，补充 `.nvmrc` 和 `package.json engines`，要求 Node >=20.19.0。
 - 安装 Node v22.22.2 后重新执行 `npm install` 成功，`nuxt prepare` 正常生成类型文件。
 - 执行 `npm run build` 验证 Nuxt 项目骨架，生产构建成功。
+- 初始化本地 git 仓库并提交项目骨架，提交信息为 `feat(scaffold): initialize nuxt agent console`。
+- 尝试检查 GitHub 远程仓库 `git@github.com:duanhejin/super-agent-console.git`，因 SSH host key verification 失败，停止远程推送，等待手动配置或提供远程地址。
