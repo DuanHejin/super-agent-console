@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id        String     @id @default(cuid())
+  title     String?
+  messages  Message[]
+  runs      AgentRun[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  role           String
+  content        String        @db.Text
+  runId          String?
+  createdAt      DateTime      @default(now())
+}
+
+model AgentRun {
+  id             String        @id @default(cuid())
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  traceId        String
+  userInput      String        @db.Text
+  status         String
+  finalOutput    String?       @db.Text
+  startedAt      DateTime      @default(now())
+  endedAt        DateTime?
+  events         AgentEvent[]
+  toolCalls      ToolCall[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model AgentEvent {
+  id        String   @id @default(cuid())
+  runId     String
+  run       AgentRun @relation(fields: [runId], references: [id])
+  traceId   String
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+model ToolCall {
+  id        String   @id @default(cuid())
+  runId     String
+  run       AgentRun @relation(fields: [runId], references: [id])
+  traceId   String
+  toolName  String
+  arguments Json
+  result    Json?
+  status    String
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  createdAt DateTime @default(now())
+}
