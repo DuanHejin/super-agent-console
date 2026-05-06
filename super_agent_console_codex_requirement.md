@@ -2,7 +2,7 @@
 
 ## 0. 项目一句话目标
 
-请实现一个基于 **Nuxt 3 + TypeScript + MySQL + Prisma + Docker + 腾讯云 TKE/CLS + Nacos** 的 AI Agent 工程化 Demo。
+请实现一个基于 **Nuxt 3 + TypeScript + MySQL + Prisma + Docker + K3S + JSON stdout 日志** 的 AI Agent 工程化 Demo。
 
 该 Demo 的核心目标不是做一个普通聊天机器人，而是打通：
 
@@ -11,15 +11,15 @@ Nuxt 3 全栈应用
 ↓
 Docker 镜像构建
 ↓
-腾讯云 TCR 镜像仓库
+镜像仓库（TCR / GHCR / Docker Hub 均可）
 ↓
-腾讯云 TKE Pod 部署
+香港轻量应用服务器单节点 K3S 部署
 ↓
-TKE Nacos 插件配置注入
+K3S ConfigMap / Secret 配置注入
 ↓
 stdout JSON 日志输出
 ↓
-CLS 日志检索
+日志采集与检索（优先 stdout，本地或 CLS 可选）
 ↓
 AI 流式输出
 ↓
@@ -54,9 +54,9 @@ Agent Timeline 可视化
 - Agent Runtime 基础能力
 - 工具调用规则设计
 - Docker 镜像构建
-- TKE 容器部署
-- TKE Nacos 插件接入与环境变量集中管理
-- CLS 标准日志采集
+- K3S 单节点 Kubernetes 部署
+- K3S ConfigMap / Secret 配置管理
+- stdout JSON 标准日志输出
 - runId / traceId 链路追踪
 - 独立域名与香港服务器上的网站访问层搭建
 
@@ -128,24 +128,32 @@ pino 或其他 JSON logger
 
 ```txt
 Docker
-Tencent Container Registry / TCR
-Tencent Kubernetes Engine / TKE
-Tencent Cloud Log Service / CLS
-Tencent TKE Nacos 插件
+K3S
+Nginx / Caddy
+Container Registry（TCR / GHCR / Docker Hub 均可）
+JSON stdout logs
 ```
 
 ### 3.6 配置中心
 
-第一版环境变量通过 **腾讯云 TKE 自带的 Nacos 插件**接入。
+当前香港轻量应用服务器无法使用腾讯云云托管 TKE，因此第一版生产配置不再依赖 TKE Nacos 插件。
+
+第一版配置来源：
+
+```txt
+本地开发：.env
+生产部署：K3S ConfigMap + Secret
+```
 
 要求：
 
 - 应用仍保留 `.env.example` 作为本地开发和变量说明模板。
 - 本地开发可以从 `.env` 读取配置。
-- 生产环境优先从 Nacos 配置读取运行时配置。
-- Nacos 中管理普通配置，例如 `APP_NAME`、`APP_VERSION`、`ARK_BASE_URL`、`ARK_MODEL_ID`、`LOG_LEVEL`、`MOCK_MODEL_ENABLED`。
+- 生产环境通过 K3S ConfigMap 管理普通配置，例如 `APP_NAME`、`APP_VERSION`、`ARK_BASE_URL`、`ARK_MODEL_ID`、`LOG_LEVEL`、`MOCK_MODEL_ENABLED`。
+- 生产环境通过 K3S Secret 管理敏感配置，例如 `DATABASE_URL`、`ARK_API_KEY`。
 - 敏感配置仍需要按实际部署方式安全注入，不允许写死在代码、镜像或 Git 仓库中。
-- README 需要说明本地 `.env` 与 TKE Nacos 配置之间的对应关系。
+- Nacos 不作为当前 MVP 必选项；如后续确实需要配置中心，可在 K3S 中自建 Nacos 或接入外部 Nacos。
+- README 需要说明本地 `.env` 与 K3S ConfigMap / Secret 之间的对应关系。
 
 ---
 
@@ -180,21 +188,22 @@ Tencent TKE Nacos 插件
    - ingress.yaml，可选
    - configmap.yaml
    - secret.example.yaml
-16. 接入 TKE Nacos 插件作为生产环境配置来源。
+16. 接入 K3S ConfigMap / Secret 作为生产环境配置来源。
 17. 提供网站访问层搭建说明：
    - 域名解析
    - 香港服务器反向代理
-   - 后续转发到 TKE 服务或临时静态/占位页面
+   - 后续转发到 K3S Service / Ingress 或临时静态/占位页面
    - HTTPS 证书配置建议
-18. 提供 `timeline.md`，按日期记录项目执行过程中的每一次具体动作。
+18. 提供 `timeline.md`，按日期记录项目执行过程中的项目相关改动。
 19. README 说明如何：
    - 本地启动
    - 构建镜像
-   - 推送 TCR
-   - 部署 TKE
+   - 推送镜像仓库
+   - 在香港服务器部署 K3S
+   - 部署应用到 K3S
    - 查看日志
    - 配置环境变量
-   - 配置 Nacos
+   - 配置 K3S ConfigMap / Secret
    - 配置域名与香港服务器访问层
 
 ### 4.2 暂不实现
@@ -932,7 +941,7 @@ db_check_error
 
 ## 15. 环境变量
 
-`.env.example` 必须包含本地开发所需变量，同时作为 Nacos 配置项的说明模板：
+`.env.example` 必须包含本地开发所需变量，同时作为 K3S ConfigMap / Secret 配置项的说明模板：
 
 ```bash
 NODE_ENV=development
@@ -953,9 +962,9 @@ MOCK_MODEL_ENABLED=true
 
 - 真实 `.env` 不要提交。
 - 本地开发可以通过 `.env` 读取配置。
-- 生产环境优先通过腾讯云 TKE 自带的 Nacos 插件读取配置。
-- README 说明每个环境变量用途，以及对应的 Nacos 配置项。
-- K8s YAML 需要说明哪些配置来自 Nacos，哪些配置仍通过 Secret 或其他安全方式注入。
+- 生产环境优先通过 K3S ConfigMap / Secret 读取配置。
+- README 说明每个环境变量用途，以及对应的 K3S 配置项。
+- K8s YAML 需要说明哪些配置来自 ConfigMap，哪些配置来自 Secret。
 - K8s Secret 示例不能包含真实密钥。
 
 ---
@@ -992,7 +1001,7 @@ mysql
 
 ---
 
-## 17. Kubernetes YAML 要求
+## 17. Kubernetes / K3S YAML 要求
 
 目录：
 
@@ -1004,7 +1013,8 @@ k8s/
 
 要求：
 
-- image 使用占位符：`YOUR_TCR_IMAGE_URL:TAG`
+- image 使用占位符：`YOUR_IMAGE_REGISTRY_URL:TAG`
+- 允许替换为 TCR、GHCR、Docker Hub 或其他镜像仓库地址
 - replicas 第一版设为 1
 - containerPort 3000
 - 配置 envFrom ConfigMap 和 Secret
@@ -1029,7 +1039,9 @@ k8s/
 
 可选。
 
-如果不做 Ingress，README 说明如何通过 Service / LoadBalancer / 端口转发访问。
+在单节点 K3S 中，Ingress 推荐使用 K3S 自带 Traefik，或按需替换为 Nginx Ingress。
+
+如果不做 Ingress，README 说明如何通过 NodePort、端口转发或服务器入口 Nginx / Caddy 访问。
 
 ### 17.4 configmap.yaml
 
@@ -1045,7 +1057,7 @@ LOG_LEVEL
 MOCK_MODEL_ENABLED
 ```
 
-如果生产环境已经通过 TKE Nacos 插件统一管理上述普通配置，则 `configmap.yaml` 可以作为兜底示例或本地 Kubernetes 示例。README 需要明确实际生产部署以 Nacos 配置为准。
+生产环境第一版以 K3S ConfigMap 管理上述普通配置。README 需要明确 `.env.example` 与 `configmap.yaml` 的映射关系。
 
 ### 17.5 secret.example.yaml
 
@@ -1058,35 +1070,36 @@ ARK_API_KEY
 
 不要写真实值。
 
-### 17.6 Nacos 配置要求
+### 17.6 配置管理要求
 
-生产环境配置通过腾讯云 TKE 自带的 Nacos 插件接入。
+生产环境配置通过 K3S ConfigMap / Secret 接入。
 
 要求：
 
-- README 说明 Nacos 插件启用、配置创建、应用读取配置的基本流程。
-- 配置命名需要区分环境，例如 `super-agent-console-dev`、`super-agent-console-prod`。
-- 应用启动时需要能读取 Nacos 下发的运行配置。
-- 本地开发无需强依赖 Nacos，避免影响本地调试效率。
-- 不允许把 Nacos 中的敏感配置示例写成真实值。
+- README 说明 ConfigMap、Secret 创建与更新流程。
+- 配置命名需要区分环境，例如 `super-agent-console-config`、`super-agent-console-secret`。
+- 应用启动时通过环境变量读取 K3S 注入的运行配置。
+- 本地开发无需强依赖 K3S，避免影响本地调试效率。
+- 不允许把 Secret 示例写成真实值。
+- Nacos 作为后续可选增强项，不进入当前 7 天 MVP 的必选范围。
 
 ### 17.7 网站访问层要求
 
-当前已经购买域名和香港服务器。项目执行顺序上，允许先搭建网站访问层，再逐步补齐 Nuxt 代码和后端能力。
+当前已经购买域名和香港轻量应用服务器。项目执行顺序上，允许先搭建网站访问层和单节点 K3S，再逐步补齐 Nuxt 代码和后端能力。
 
 第一阶段网站层目标：
 
 - 域名 DNS 解析到香港服务器。
 - 香港服务器上配置 Nginx 或 Caddy 作为入口。
 - 在 Nuxt 应用完成前，可以先部署一个临时占位页或反向代理到本地/测试服务。
-- 后续 Nuxt 应用部署到 TKE 后，香港服务器入口可以反向代理到 TKE 暴露地址。
+- 后续 Nuxt 应用部署到本机 K3S 后，香港服务器入口可以反向代理到 K3S Service / Ingress。
 - 建议尽早配置 HTTPS，证书可使用 Let's Encrypt 或云厂商证书。
 
 README 或 `docs/website-layer.md` 需要说明：
 
 - 域名解析记录配置。
 - 香港服务器入口服务配置。
-- 反向代理目标如何从临时页面切换到 TKE 服务。
+- 反向代理目标如何从临时页面切换到 K3S 服务。
 - HTTPS 配置方式。
 - 常见排障命令。
 
@@ -1104,15 +1117,16 @@ README 至少包含：
 6. 数据库初始化
 7. Docker 本地运行
 8. 镜像构建命令
-9. 推送 TCR 命令示例
-10. TKE 部署命令示例
-11. CLS 日志查询说明
-12. Nacos 配置接入说明
-13. 域名与香港服务器网站访问层说明
-14. AgentEvent 协议说明
-15. 数据库表说明
-16. 项目架构图 Mermaid
-17. 面试讲解要点
+9. 推送镜像仓库命令示例
+10. 香港服务器 K3S 安装说明
+11. K3S 部署命令示例
+12. JSON stdout 日志查看说明
+13. ConfigMap / Secret 配置说明
+14. 域名与香港服务器网站访问层说明
+15. AgentEvent 协议说明
+16. 数据库表说明
+17. 项目架构图 Mermaid
+18. 面试讲解要点
 
 Mermaid 架构图示例：
 
@@ -1125,12 +1139,12 @@ flowchart TD
   Agent --> Tools[Tool Executor]
   Agent --> DB[(MySQL)]
   Agent --> Log[JSON stdout Logs]
-  Log --> CLS[Tencent CLS]
-  Nacos[TKE Nacos Plugin] --> API
+  Log --> LogView[kubectl logs / optional CLS]
+  Config[K3S ConfigMap / Secret] --> API
   Domain[Custom Domain] --> HK[Hong Kong Server / Reverse Proxy]
-  HK --> TKE
-  Docker[Docker Image] --> TCR[Tencent TCR]
-  TCR --> TKE[Tencent TKE Pod]
+  HK --> K3S[K3S Single Node]
+  Docker[Docker Image] --> Registry[Container Registry]
+  Registry --> K3S
 ```
 
 ---
@@ -1160,7 +1174,7 @@ npm run dev 可启动
 - 域名解析到香港服务器
 - 香港服务器配置 Nginx 或 Caddy
 - 部署临时占位页或临时反向代理
-- 规划后续切换到 TKE Service / Ingress 的方式
+- 规划后续切换到 K3S Service / Ingress 的方式
 - 记录到 `timeline.md`
 
 验收：
@@ -1169,7 +1183,20 @@ npm run dev 可启动
 域名可以访问到香港服务器上的临时页面或入口服务
 ```
 
-### Step 3：Docker 本地运行
+### Step 3：K3S 单节点基础环境
+
+- 在香港轻量应用服务器安装 K3S
+- 确认 `kubectl get nodes` 正常
+- 确认 K3S 自带 Traefik 或选定 Nginx / Caddy 入口方案
+- 规划镜像仓库拉取方式
+
+验收：
+
+```txt
+香港服务器上的 K3S 单节点集群可用
+```
+
+### Step 4：Docker 本地运行
 
 - Dockerfile
 - docker-compose.yml
@@ -1182,7 +1209,7 @@ npm run dev 可启动
 docker compose up -d --build 成功
 ```
 
-### Step 4：AgentEvent + Mock Run
+### Step 5：AgentEvent + Mock Run
 
 - 定义 AgentEvent 类型
 - 实现 SSE 工具
@@ -1196,7 +1223,7 @@ docker compose up -d --build 成功
 点击 Mock Run 后，前端能看到完整 Agent Timeline
 ```
 
-### Step 5：数据库落库
+### Step 6：数据库落库
 
 - agent_runs
 - agent_events
@@ -1211,7 +1238,7 @@ docker compose up -d --build 成功
 一次 mock run 能在详情页复盘
 ```
 
-### Step 6：真实模型调用
+### Step 7：真实模型调用
 
 - doubao-client
 - /api/agent/run
@@ -1224,7 +1251,7 @@ docker compose up -d --build 成功
 Real Run 能返回真实或 mock 的流式输出
 ```
 
-### Step 7：工具调用
+### Step 8：工具调用
 
 - parseJobDescription
 - generateInterviewPlan
@@ -1237,19 +1264,20 @@ Real Run 能返回真实或 mock 的流式输出
 Timeline 能展示至少一次工具调用全过程
 ```
 
-### Step 8：K8s / Nacos / 部署文档
+### Step 9：K3S / 部署文档
 
 - k8s YAML
-- TKE Nacos 插件配置说明
-- TCR 推送说明
-- TKE 部署说明
-- CLS 日志说明
+- K3S ConfigMap / Secret 配置说明
+- 镜像仓库推送说明
+- K3S 部署说明
+- stdout 日志查看说明
+- optional CLS 日志采集说明
 - README 完善
 
 验收：
 
 ```txt
-具备部署到腾讯云 TKE 的全部配置和说明
+具备部署到香港轻量服务器 K3S 的全部配置和说明
 ```
 
 ---
@@ -1274,9 +1302,9 @@ Timeline 能展示至少一次工具调用全过程
 13. 日志包含 traceId / runId
 14. Dockerfile 可构建镜像
 15. k8s YAML 存在
-16. Nacos 配置接入说明存在
+16. K3S ConfigMap / Secret 配置说明存在
 17. 域名与香港服务器访问层说明存在
-18. timeline.md 按日期记录项目执行动作
+18. timeline.md 按日期记录项目相关改动
 19. README 可指导部署
 ```
 
@@ -1293,7 +1321,7 @@ Timeline 能展示至少一次工具调用全过程
 - 前端组件保持简单，不追求复杂 UI。
 - 不要引入过多依赖。
 - 优先保证主链路跑通。
-- 全部执行动作需要持续记录到项目根目录 `timeline.md`，按日期维度维护在一个文件中。
+- 项目相关改动需要持续记录到项目根目录 `timeline.md`，按日期维度维护在一个文件中；Git 推送失败、重试、认证检查等过程性操作不记录。
 
 ---
 
@@ -1304,12 +1332,12 @@ Timeline 能展示至少一次工具调用全过程
 ```txt
 我使用 Nuxt 3 做了一个 AI Agent 工程 Demo。
 它不是普通聊天页面，而是覆盖了从开发到部署再到日志排障的完整链路。
-应用通过 Docker 构建镜像，推送到腾讯云 TCR，并部署到 TKE Pod。
-生产环境配置通过 TKE 自带的 Nacos 插件集中管理。
-用户可以通过已购买域名访问香港服务器入口，再由入口服务转发到最终应用。
-服务端所有日志以 JSON 输出到 stdout，再通过 CLS 收集和检索。
+应用通过 Docker 构建镜像，推送到镜像仓库，并部署到香港轻量应用服务器上的单节点 K3S。
+生产环境配置通过 K3S ConfigMap / Secret 管理。
+用户可以通过已购买域名访问香港服务器入口，再由入口服务转发到 K3S 内的 Nuxt 应用。
+服务端所有日志以 JSON 输出到 stdout，可通过 kubectl logs 查看，后续也可以采集到 CLS。
 业务上，我设计了 AgentEvent 协议，前端通过 SSE 实时展示 AI 流式输出和工具调用状态。
-每次 Agent 执行都有 runId 和 traceId，可以在前端 Timeline、数据库记录和 CLS 日志中串起完整链路。
+每次 Agent 执行都有 runId 和 traceId，可以在前端 Timeline、数据库记录和 JSON 日志中串起完整链路。
 这个项目证明我不仅能做 AI 前端交互，也理解服务端、Agent Runtime、容器部署和日志排障。
 ```
 
@@ -1338,10 +1366,10 @@ Timeline 能展示至少一次工具调用全过程
 ```txt
 可本地运行
 可 Docker 化
-可部署到 TKE
-可通过 Nacos 管理生产配置
+可部署到香港轻量应用服务器单节点 K3S
+可通过 K3S ConfigMap / Secret 管理生产配置
 可通过域名和香港服务器访问
-可输出 CLS 可采集日志
+可输出 JSON stdout 日志，后续可接入 CLS
 可展示 AI 流式输出
 可展示 Agent 工具调用 Timeline
 可落库复盘

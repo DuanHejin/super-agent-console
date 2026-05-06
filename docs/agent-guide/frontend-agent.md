@@ -29,5 +29,5 @@ This guide covers Nuxt pages, Vue components, and composables for the Agent Cons
 ## Before Editing
 
 - Read `super_agent_console_codex_requirement.md`.
-- Check `timeline.md` and append the concrete action after meaningful work.
+- Check `timeline.md` and append project-related changes after meaningful work.
 - Keep frontend changes aligned with the AgentEvent protocol in `types/agent-event.ts`.

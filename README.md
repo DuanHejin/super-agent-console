@@ -1,6 +1,6 @@
 # Super Agent Console
 
-AI Agent 执行链路可视化工程 Demo，基于 Nuxt 3、TypeScript、MySQL、Prisma、Docker、腾讯云 TKE/CLS 与 TKE Nacos 插件。
+AI Agent 执行链路可视化工程 Demo，基于 Nuxt 3、TypeScript、MySQL、Prisma、Docker、K3S 与 JSON stdout 日志。
 
 ## Current Status
 
@@ -33,7 +33,7 @@ http://localhost:3000
 
 复制 `.env.example` 为 `.env` 后填写本地变量。
 
-生产环境配置优先通过腾讯云 TKE 自带 Nacos 插件下发，`.env.example` 同时作为配置项说明模板。
+生产环境配置优先通过 K3S ConfigMap / Secret 注入，`.env.example` 同时作为配置项说明模板。
 
 ## API
 
@@ -48,4 +48,4 @@ http://localhost:3000
 
 ## Timeline
 
-项目执行动作统一记录在 `timeline.md`。
+项目相关改动统一记录在 `timeline.md`。Git 推送失败、认证检查、重试等过程性操作不记录。

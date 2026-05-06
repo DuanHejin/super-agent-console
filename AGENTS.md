@@ -26,7 +26,7 @@ super-agent-console/
 2. 前端任务读 `docs/agent-guide/frontend-agent.md`。
 3. 服务端任务读 `docs/agent-guide/server-agent.md`。
 4. 涉及整体目标、验收标准、部署链路时读 `super_agent_console_codex_requirement.md`。
-5. 开始和完成具体动作后，按日期更新 `timeline.md`。
+5. 完成项目相关改动后，按日期更新 `timeline.md`；Git 推送失败、认证检查、重试等过程性操作不记录。
 
 > 不要在未阅读对应子项目文档前直接修改代码。
 

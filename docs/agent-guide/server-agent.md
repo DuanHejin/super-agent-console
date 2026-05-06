@@ -23,12 +23,12 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 ## Config Rules
 
 - Local development reads from `.env`.
-- Production configuration should prefer the Tencent TKE Nacos plugin.
+- Production configuration should prefer K3S ConfigMap / Secret injection.
 - Do not log API keys, database passwords, or complete sensitive environment values.
-- Keep `.env.example` as the local template and Nacos mapping reference.
+- Keep `.env.example` as the local template and K3S configuration mapping reference.
 
 ## Before Editing
 
 - Read `super_agent_console_codex_requirement.md`.
-- Check `timeline.md` and append the concrete action after meaningful work.
-- Keep server changes compatible with Docker, TKE, CLS JSON logs, and future Nacos injection.
+- Check `timeline.md` and append project-related changes after meaningful work.
+- Keep server changes compatible with Docker, K3S, and JSON stdout logs.
