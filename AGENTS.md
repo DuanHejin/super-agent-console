@@ -16,6 +16,7 @@ super-agent-console/
 ├── prisma/                # Prisma schema
 ├── k8s/                   # Kubernetes 部署文件
 ├── docs/agent-guide/      # Agent 开发说明
+├── .agents/skills/        # 仓库内项目级 Codex skills
 ├── timeline.md            # 项目执行记录
 └── super_agent_console_codex_requirement.md
 ```
@@ -27,6 +28,7 @@ super-agent-console/
 3. 服务端任务读 `docs/agent-guide/server-agent.md`。
 4. 涉及整体目标、验收标准、部署链路时读 `super_agent_console_codex_requirement.md`。
 5. 完成项目相关改动后，按日期更新 `timeline.md`；Git 推送失败、认证检查、重试等过程性操作不记录。
+6. 涉及 PR 创建、review、merge、release 分支发布时使用 `.agents/skills/github-pr-release/SKILL.md`。
 
 > 不要在未阅读对应子项目文档前直接修改代码。
 
