@@ -19,7 +19,7 @@
       </article>
       <article>
         <h2>Deployment Layer</h2>
-        <p>生产配置将通过 TKE Nacos 插件接入，域名与香港服务器入口层先行搭建。</p>
+        <p>发布链路将通过 GitHub Actions 构建 GHCR 镜像，并滚动更新香港服务器上的 K3S Pod。</p>
       </article>
     </section>
   </main>
@@ -88,6 +88,7 @@ p {
   margin: 0;
   color: #526068;
   line-height: 1.65;
+  word-break: break-word;
 }
 
 code {
