@@ -92,6 +92,7 @@ else
 fi
 
 echo "Resolved image tag: ${IMAGE_TAG}"
+echo "Resolved remote image: ${REMOTE_IMAGE}:${IMAGE_TAG}"
 
 echo "Logging in to ${IMAGE_REGISTRY} as ${GITHUB_USERNAME}..."
 printf '%s' "${GITHUB_TOKEN}" | docker login "${IMAGE_REGISTRY}" -u "${GITHUB_USERNAME}" --password-stdin
@@ -112,6 +113,14 @@ docker push "${REMOTE_IMAGE}:${IMAGE_TAG}"
 
 echo "Pushing ${REMOTE_IMAGE}:latest..."
 docker push "${REMOTE_IMAGE}:latest"
+
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  {
+    echo "image_tag=${IMAGE_TAG}"
+    echo "image=${REMOTE_IMAGE}:${IMAGE_TAG}"
+    echo "latest_image=${REMOTE_IMAGE}:latest"
+  } >>"${GITHUB_OUTPUT}"
+fi
 
 cat <<EOF
 

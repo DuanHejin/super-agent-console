@@ -1,0 +1,92 @@
+name: Release Docker Image To K3S
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+concurrency:
+  group: release-docker-k3s
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_OWNER: duanhejin
+  IMAGE_NAME: super-agent-console
+  IMAGE_PLATFORM: linux/amd64
+  GITHUB_USERNAME: DuanHejin
+  K3S_NAMESPACE: default
+  K3S_DEPLOYMENT: my-web-app
+  K3S_CONTAINER: my-web-app
+  K3S_SERVICE: my-web-svc
+  APP_CONTAINER_PORT: "3000"
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and push image
+        id: publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN || github.token }}
+        run: ./scripts/build-and-push-ghcr.sh
+
+      - name: Prepare SSH
+        env:
+          K3S_SSH_HOST: ${{ secrets.K3S_SSH_HOST }}
+          K3S_SSH_PORT: ${{ secrets.K3S_SSH_PORT }}
+          K3S_SSH_USER: ${{ secrets.K3S_SSH_USER }}
+          K3S_SSH_PRIVATE_KEY: ${{ secrets.K3S_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${K3S_SSH_HOST}" || -z "${K3S_SSH_USER}" || -z "${K3S_SSH_PRIVATE_KEY}" ]]; then
+            echo "K3S_SSH_HOST, K3S_SSH_USER and K3S_SSH_PRIVATE_KEY secrets are required." >&2
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${K3S_SSH_PRIVATE_KEY}" > ~/.ssh/k3s_deploy_key
+          chmod 600 ~/.ssh/k3s_deploy_key
+
+          ssh-keyscan -p "${K3S_SSH_PORT:-22}" "${K3S_SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Deploy image to K3S
+        env:
+          K3S_SSH_HOST: ${{ secrets.K3S_SSH_HOST }}
+          K3S_SSH_PORT: ${{ secrets.K3S_SSH_PORT }}
+          K3S_SSH_USER: ${{ secrets.K3S_SSH_USER }}
+          RELEASE_IMAGE: ${{ steps.publish.outputs.image }}
+        run: |
+          set -euo pipefail
+
+          ssh -i ~/.ssh/k3s_deploy_key \
+            -p "${K3S_SSH_PORT:-22}" \
+            "${K3S_SSH_USER}@${K3S_SSH_HOST}" \
+            "RELEASE_IMAGE='${RELEASE_IMAGE}' K3S_NAMESPACE='${K3S_NAMESPACE}' K3S_DEPLOYMENT='${K3S_DEPLOYMENT}' K3S_CONTAINER='${K3S_CONTAINER}' K3S_SERVICE='${K3S_SERVICE}' APP_CONTAINER_PORT='${APP_CONTAINER_PORT}' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          kubectl patch deployment "${K3S_DEPLOYMENT}" -n "${K3S_NAMESPACE}" --type='json' \
+            -p="[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/ports/0/containerPort\",\"value\":${APP_CONTAINER_PORT}}]" || true
+
+          kubectl patch svc "${K3S_SERVICE}" -n "${K3S_NAMESPACE}" --type='json' \
+            -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/targetPort\",\"value\":${APP_CONTAINER_PORT}}]" || true
+
+          kubectl set image "deployment/${K3S_DEPLOYMENT}" \
+            "${K3S_CONTAINER}=${RELEASE_IMAGE}" \
+            -n "${K3S_NAMESPACE}"
+
+          kubectl rollout status "deployment/${K3S_DEPLOYMENT}" -n "${K3S_NAMESPACE}" --timeout=180s
+          kubectl get pods -n "${K3S_NAMESPACE}"
+          REMOTE

@@ -24,3 +24,6 @@
 - 将镜像推送到 GitHub Container Registry：`ghcr.io/duanhejin/super-agent-console:0.1.0` 与 `ghcr.io/duanhejin/super-agent-console:latest`。
 - 新增 `docs/deploy-ghcr-k3s.md` 和 `scripts/build-and-push-ghcr.sh`，沉淀 Docker build、GHCR push 与 K3S 拉取镜像部署流程。
 - 更新 GHCR 构建推送脚本的版本策略：默认从 GHCR 最大 semver tag 自动递增 patch，patch 达到 `99` 后进位到下一个 minor 版本。
+- 新增 GitHub Actions release workflow：代码推送到 `release` 分支时自动构建 Docker 镜像、推送 GHCR，并通过 SSH 触发 K3S Deployment 滚动更新。
+- 更新 K3S CI/CD 配置中的 Service 名称为 `my-web-svc`。
+- 更新首页部署文案，明确展示 GitHub Actions、GHCR 与香港服务器 K3S 的发布链路。
