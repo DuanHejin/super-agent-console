@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub PR Release"
+  short_description: "Create, review, and merge project PRs into release."
+  default_prompt: "Create a PR from the feature branch to release, review readiness, and merge when approved."
