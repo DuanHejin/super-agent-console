@@ -23,6 +23,11 @@ ENV PORT=3000
 
 COPY --from=builder /app/.output ./.output
 
+# Nitro serves generated public assets relative to the server chunks bundle in
+# this build output, so keep a copy at the path used by the runtime asset map.
+RUN mkdir -p .output/server/chunks/public \
+  && cp -R .output/public/. .output/server/chunks/public/
+
 EXPOSE 3000
 
 CMD ["node", ".output/server/index.mjs"]
