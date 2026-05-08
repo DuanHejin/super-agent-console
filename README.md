@@ -35,11 +35,14 @@ http://localhost:3000
 
 生产环境配置优先通过 K3S ConfigMap / Secret 注入，`.env.example` 同时作为配置项说明模板。
 
+K3S 配置示例见 `k8s/configmap.yaml`、`k8s/secret.example.yaml` 和 `docs/k3s-config-secret.md`。
+
 ## API
 
 - `GET /api/health`
 - `GET /api/ready`
 - `GET /api/db-check`
+- `GET /api/config-demo`
 
 ## Agent Docs
 
