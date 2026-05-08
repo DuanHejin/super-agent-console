@@ -1,0 +1,10 @@
+spec:
+  template:
+    spec:
+      containers:
+        - name: my-web-app
+          envFrom:
+            - configMapRef:
+                name: super-agent-console-config
+            - secretRef:
+                name: super-agent-console-secret

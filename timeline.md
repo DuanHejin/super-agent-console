@@ -27,3 +27,5 @@
 - 新增 GitHub Actions release workflow：代码推送到 `release` 分支时自动构建 Docker 镜像、推送 GHCR，并通过 SSH 触发 K3S Deployment 滚动更新。
 - 更新 K3S CI/CD 配置中的 Service 名称为 `my-web-svc`。
 - 更新首页部署文案，明确展示 GitHub Actions、GHCR 与香港服务器 K3S 的发布链路。
+- 新增项目级 skill `.agents/skills/github-pr-release`，沉淀从任意开发分支创建 PR、review、merge 到 `release` 并触发 CI/CD 的操作流程。
+- 新增 K3S ConfigMap / Secret demo 配置、部署说明和浏览器端非敏感 runtimeConfig 读取示例，用于验证生产环境配置注入链路。

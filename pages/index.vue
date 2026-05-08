@@ -25,6 +25,26 @@
   </main>
 </template>
 
+<script setup lang="ts">
+const runtimeConfig = useRuntimeConfig()
+
+onMounted(async () => {
+  const publicConfig = {
+    appName: runtimeConfig.public.appName,
+    appVersion: runtimeConfig.public.appVersion,
+    deployEnv: runtimeConfig.public.deployEnv,
+    configDemoText: runtimeConfig.public.configDemoText,
+    siteUrl: runtimeConfig.public.siteUrl
+  }
+
+  console.log('[config-demo] browser public runtime config:', publicConfig)
+
+  const serverConfigStatus = await $fetch('/api/config-demo')
+
+  console.log('[config-demo] server config status:', serverConfigStatus)
+})
+</script>
+
 <style scoped>
 .page-shell {
   min-height: 100vh;
