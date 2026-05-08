@@ -276,3 +276,20 @@ kubectl describe pod POD_NAME -n default
 - Deployment `containerPort` 是 `3000`。
 - Service `targetPort` 是 `3000`。
 - Ingress 指向的 Service port 与 Service 定义一致。
+
+### `/_nuxt/*.js` 返回 500
+
+错误示例：
+
+```txt
+ENOENT: no such file or directory, open '/app/.output/server/chunks/public/_nuxt/xxx.js'
+```
+
+这是 Nuxt/Nitro 静态资源路径问题。当前 Dockerfile 会把 `.output/public` 同步到 `.output/server/chunks/public`，用于匹配 Nitro runtime 的静态资源索引。
+
+验证镜像内资源：
+
+```bash
+kubectl exec -n default deploy/my-web-app -- ls -l /app/.output/public/_nuxt
+kubectl exec -n default deploy/my-web-app -- ls -l /app/.output/server/chunks/public/_nuxt
+```
