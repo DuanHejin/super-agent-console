@@ -30,3 +30,4 @@
 - 新增项目级 skill `.agents/skills/github-pr-release`，沉淀从任意开发分支创建 PR、review、merge 到 `release` 并触发 CI/CD 的操作流程。
 - 新增 K3S ConfigMap / Secret demo 配置、部署说明和浏览器端非敏感 runtimeConfig 读取示例，用于验证生产环境配置注入链路。
 - 修复 Nuxt Docker 镜像中的静态资源布局，将 `.output/public` 同步到 Nitro runtime 查找的 `.output/server/chunks/public`，避免线上 `/_nuxt/*.js` 资源 500。
+- 新增 `docs/ops-runbook.md`，沉淀 K3S 资源、release 发布流程、GHCR 拉取、ConfigMap / Secret、CLS 日志采集与 Nuxt 静态资源排障基线。
