@@ -32,3 +32,4 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - Read `super_agent_console_codex_requirement.md`.
 - Check `timeline.md` and append project-related changes after meaningful work.
 - Keep server changes compatible with Docker, K3S, and JSON stdout logs.
+- Agent runtime events should use the shared `AgentEvent` protocol with `eventType`, `runId`, `traceId`, `sequence`, and `timestamp` so frontend Timeline, logs, and future database records can be correlated.

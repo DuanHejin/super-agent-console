@@ -1,13 +1,13 @@
 import type { AgentEvent } from '../../../types/agent-event'
 import { createMockAgentRun } from '../../services/agent-runtime'
-import { logger } from '../../utils/logger'
+import { logAgentEvent, logger } from '../../utils/logger'
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function writeSseEvent(res: typeof import('node:http').ServerResponse.prototype, event: AgentEvent) {
-  res.write(`event: ${event.type}\n`)
+  res.write(`event: ${event.eventType}\n`)
   res.write(`data: ${JSON.stringify(event)}\n\n`)
 }
 
@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
   })
 
   for (const agentEvent of result.events) {
+    logAgentEvent(agentEvent)
     writeSseEvent(res, agentEvent)
     await wait(260)
   }

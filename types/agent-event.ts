@@ -1,60 +1,46 @@
+export type AgentEventType =
+  | 'run_started'
+  | 'prompt_loaded'
+  | 'model_stream_started'
+  | 'tool_call_started'
+  | 'tool_call_finished'
+  | 'model_delta'
+  | 'run_finished'
+  | 'run_failed'
+
+interface AgentEventBase<T extends AgentEventType> {
+  eventType: T
+  runId: string
+  traceId: string
+  sequence: number
+  timestamp: string
+  message?: string
+}
+
 export type AgentEvent =
-  | {
-      type: 'agent_start'
-      runId: string
-      traceId: string
-      timestamp: string
-    }
-  | {
-      type: 'prompt_loaded'
-      runId: string
-      traceId: string
+  | AgentEventBase<'run_started'>
+  | (AgentEventBase<'prompt_loaded'> & {
       promptName: string
-      timestamp: string
-    }
-  | {
-      type: 'model_stream_start'
-      runId: string
-      traceId: string
+    })
+  | (AgentEventBase<'model_stream_started'> & {
       model: string
-      timestamp: string
-    }
-  | {
-      type: 'tool_call_start'
-      runId: string
-      traceId: string
+    })
+  | (AgentEventBase<'tool_call_started'> & {
       toolCallId: string
       toolName: string
       args: unknown
-      timestamp: string
-    }
-  | {
-      type: 'tool_call_result'
-      runId: string
-      traceId: string
+    })
+  | (AgentEventBase<'tool_call_finished'> & {
       toolCallId: string
       toolName: string
       result: unknown
-      timestamp: string
-    }
-  | {
-      type: 'final_answer_delta'
-      runId: string
-      traceId: string
+    })
+  | (AgentEventBase<'model_delta'> & {
       content: string
-      timestamp: string
-    }
-  | {
-      type: 'agent_done'
-      runId: string
-      traceId: string
+    })
+  | (AgentEventBase<'run_finished'> & {
       resultId?: string
-      timestamp: string
-    }
-  | {
-      type: 'agent_error'
-      runId: string
-      traceId: string
-      error: string
-      timestamp: string
-    }
+    })
+  | (AgentEventBase<'run_failed'> & {
+      errorMessage: string
+    })

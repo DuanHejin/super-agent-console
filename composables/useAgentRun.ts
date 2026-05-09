@@ -23,17 +23,17 @@ export function useAgentRun() {
     traceId.value = event.traceId
     events.value.push(event)
 
-    if (event.type === 'final_answer_delta') {
+    if (event.eventType === 'model_delta') {
       finalAnswer.value += event.content
     }
 
-    if (event.type === 'agent_done') {
+    if (event.eventType === 'run_finished') {
       status.value = 'success'
     }
 
-    if (event.type === 'agent_error') {
+    if (event.eventType === 'run_failed') {
       status.value = 'failed'
-      error.value = event.error
+      error.value = event.errorMessage
     }
   }
 

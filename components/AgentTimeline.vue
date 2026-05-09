@@ -2,8 +2,9 @@
   <section class="panel">
     <h2>Timeline</h2>
     <ol v-if="events.length">
-      <li v-for="event in events" :key="`${event.type}-${event.timestamp}`">
-        <strong>{{ event.type }}</strong>
+      <li v-for="event in events" :key="`${event.sequence}-${event.eventType}`">
+        <strong>{{ event.sequence }}. {{ event.eventType }}</strong>
+        <em v-if="event.message">{{ event.message }}</em>
         <span>{{ event.timestamp }}</span>
       </li>
     </ol>
@@ -43,6 +44,13 @@ strong {
 span {
   display: block;
   font-size: 13px;
+}
+
+em {
+  display: block;
+  color: #526068;
+  font-size: 13px;
+  font-style: normal;
 }
 
 p {

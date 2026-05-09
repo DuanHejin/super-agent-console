@@ -22,6 +22,11 @@ export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunRe
   const runId = createRunId()
   const traceId = createTraceId()
   const timestamp = () => new Date().toISOString()
+  let sequence = 0
+  const nextSequence = () => {
+    sequence += 1
+    return sequence
+  }
   const normalizedInput = options.input.trim()
   const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
   const finalAnswer = [
@@ -37,74 +42,92 @@ export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunRe
 
   const events: AgentEvent[] = [
     {
-      type: 'agent_start',
+      eventType: 'run_started',
       runId,
       traceId,
+      sequence: nextSequence(),
+      message: 'Mock Agent Run started',
       timestamp: timestamp()
     },
     {
-      type: 'prompt_loaded',
+      eventType: 'prompt_loaded',
       runId,
       traceId,
+      sequence: nextSequence(),
       promptName: 'mock-agent-default',
+      message: 'Mock prompt loaded',
       timestamp: timestamp()
     },
     {
-      type: 'model_stream_start',
+      eventType: 'model_stream_started',
       runId,
       traceId,
+      sequence: nextSequence(),
       model: 'mock-model',
+      message: 'Mock model stream started',
       timestamp: timestamp()
     },
     {
-      type: 'tool_call_start',
+      eventType: 'tool_call_started',
       runId,
       traceId,
+      sequence: nextSequence(),
       toolCallId: 'tool_mock_parse_jd',
       toolName: 'parseJobDescription',
       args: {
         inputLength: normalizedInput.length
       },
+      message: 'Mock tool call started',
       timestamp: timestamp()
     },
     {
-      type: 'tool_call_result',
+      eventType: 'tool_call_finished',
       runId,
       traceId,
+      sequence: nextSequence(),
       toolCallId: 'tool_mock_parse_jd',
       toolName: 'parseJobDescription',
       result: {
         role: 'frontend-engineer',
         keywords: ['Nuxt', 'Agent', 'SSE', 'K3S']
       },
+      message: 'Mock tool call finished',
       timestamp: timestamp()
     },
     {
-      type: 'final_answer_delta',
+      eventType: 'model_delta',
       runId,
       traceId,
+      sequence: nextSequence(),
       content: finalAnswerChunks[0],
+      message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
-      type: 'final_answer_delta',
+      eventType: 'model_delta',
       runId,
       traceId,
+      sequence: nextSequence(),
       content: finalAnswerChunks[1],
+      message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
-      type: 'final_answer_delta',
+      eventType: 'model_delta',
       runId,
       traceId,
+      sequence: nextSequence(),
       content: finalAnswerChunks[2],
+      message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
-      type: 'agent_done',
+      eventType: 'run_finished',
       runId,
       traceId,
+      sequence: nextSequence(),
       resultId: `result_${runId}`,
+      message: 'Mock Agent Run finished',
       timestamp: timestamp()
     }
   ]

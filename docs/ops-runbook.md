@@ -167,6 +167,7 @@ Do not print secrets to stdout. Logs should eventually use structured fields suc
 runId
 traceId
 eventType
+sequence
 service
 env
 message
