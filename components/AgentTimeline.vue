@@ -1,13 +1,23 @@
 <template>
   <section class="panel">
     <h2>Timeline</h2>
-    <ol>
-      <li>等待 agent_start</li>
-      <li>等待 tool_call_start</li>
-      <li>等待 agent_done</li>
+    <ol v-if="events.length">
+      <li v-for="event in events" :key="`${event.type}-${event.timestamp}`">
+        <strong>{{ event.type }}</strong>
+        <span>{{ event.timestamp }}</span>
+      </li>
     </ol>
+    <p v-else>等待 Mock Agent Run。</p>
   </section>
 </template>
+
+<script setup lang="ts">
+import type { AgentEvent } from '../types/agent-event'
+
+defineProps<{
+  events: AgentEvent[]
+}>()
+</script>
 
 <style scoped>
 h2 {
@@ -19,6 +29,24 @@ h2 {
 ol {
   margin: 0;
   padding-left: 20px;
+  color: #526068;
+}
+
+li {
+  margin: 8px 0;
+}
+
+strong {
+  color: #172026;
+}
+
+span {
+  display: block;
+  font-size: 13px;
+}
+
+p {
+  margin: 0;
   color: #526068;
 }
 </style>

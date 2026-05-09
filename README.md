@@ -44,6 +44,7 @@ K3S 配置示例见 `k8s/configmap.yaml`、`k8s/secret.example.yaml` 和 `docs/k
 - `GET /api/ready`
 - `GET /api/db-check`
 - `GET /api/config-demo`
+- `POST /api/agent/mock`
 
 ## Agent Docs
 

@@ -1,10 +1,18 @@
 <template>
   <footer class="run-meta">
-    <span>runId: pending</span>
-    <span>traceId: pending</span>
-    <span>status: idle</span>
+    <span>runId: {{ runId || 'pending' }}</span>
+    <span>traceId: {{ traceId || 'pending' }}</span>
+    <span>status: {{ status }}</span>
   </footer>
 </template>
+
+<script setup lang="ts">
+defineProps<{
+  runId?: string
+  traceId?: string
+  status: 'idle' | 'running' | 'success' | 'failed'
+}>()
+</script>
 
 <style scoped>
 .run-meta {

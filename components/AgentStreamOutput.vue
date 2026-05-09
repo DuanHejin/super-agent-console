@@ -1,9 +1,20 @@
 <template>
   <section class="panel">
     <h2>AI Output</h2>
-    <p>等待 Agent 流式输出。</p>
+    <p v-if="status === 'running'">Mock Agent 正在运行。</p>
+    <p v-else-if="error" class="error">{{ error }}</p>
+    <pre v-else-if="content">{{ content }}</pre>
+    <p v-else>等待 Agent 输出。</p>
   </section>
 </template>
+
+<script setup lang="ts">
+defineProps<{
+  content: string
+  error?: string
+  status: 'idle' | 'running' | 'success' | 'failed'
+}>()
+</script>
 
 <style scoped>
 .panel {
@@ -19,5 +30,17 @@ h2 {
 p {
   margin: 0;
   color: #526068;
+}
+
+pre {
+  margin: 0;
+  color: #172026;
+  font-family: inherit;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.error {
+  color: #9d2b2b;
 }
 </style>

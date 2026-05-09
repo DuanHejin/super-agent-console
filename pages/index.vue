@@ -8,6 +8,8 @@
       </p>
     </section>
 
+    <AgentConsole />
+
     <section class="grid">
       <article>
         <h2>Agent Console</h2>
@@ -87,6 +89,10 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  margin-top: 40px;
+}
+
+.agent-console {
   margin-top: 40px;
 }
 
