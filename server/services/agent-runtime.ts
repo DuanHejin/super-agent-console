@@ -13,6 +13,12 @@ interface RunMockAgentOptions {
 }
 
 export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
+  const result = createMockAgentRun(options)
+
+  return result
+}
+
+export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunResult {
   const runId = createRunId()
   const traceId = createTraceId()
   const timestamp = () => new Date().toISOString()
@@ -23,6 +29,11 @@ export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAg
     '这是一次 Mock Agent Run，用于验证前端输入、服务端编排、Timeline 展示和运行元信息。',
     '下一阶段会把这条链路改造成 SSE 流式事件。'
   ].join('\n')
+  const finalAnswerChunks = [
+    `已收到输入：${inputPreview}\n`,
+    '这是一次 Mock Agent Run，用于验证前端输入、服务端编排、Timeline 展示和运行元信息。\n',
+    '当前阶段已经通过 SSE 逐步推送事件。'
+  ]
 
   const events: AgentEvent[] = [
     {
@@ -72,7 +83,21 @@ export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAg
       type: 'final_answer_delta',
       runId,
       traceId,
-      content: finalAnswer,
+      content: finalAnswerChunks[0],
+      timestamp: timestamp()
+    },
+    {
+      type: 'final_answer_delta',
+      runId,
+      traceId,
+      content: finalAnswerChunks[1],
+      timestamp: timestamp()
+    },
+    {
+      type: 'final_answer_delta',
+      runId,
+      traceId,
+      content: finalAnswerChunks[2],
       timestamp: timestamp()
     },
     {

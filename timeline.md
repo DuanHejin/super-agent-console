@@ -32,3 +32,4 @@
 - 修复 Nuxt Docker 镜像中的静态资源布局，将 `.output/public` 同步到 Nitro runtime 查找的 `.output/server/chunks/public`，避免线上 `/_nuxt/*.js` 资源 500。
 - 新增 `docs/ops-runbook.md`，沉淀 K3S 资源、release 发布流程、GHCR 拉取、ConfigMap / Secret、CLS 日志采集与 Nuxt 静态资源排障基线。
 - 实现 Mock Agent 主流程：新增服务端 Mock Run 接口，生成 runId、traceId、事件列表和最终输出，并在首页 Agent Console 中展示输入、Timeline、输出与运行元信息。
+- 新增 `POST /api/agent/run` SSE 流式接口，并让前端 Agent Console 通过浏览器 fetch 逐步消费 AgentEvent，实时更新 Timeline 与输出区。

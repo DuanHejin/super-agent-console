@@ -16,6 +16,27 @@ export function useAgentRun() {
   const finalAnswer = ref('')
   const error = ref<string>()
 
+  const { openAgentStream } = useSseStream()
+
+  function applyEvent(event: AgentEvent) {
+    runId.value = event.runId
+    traceId.value = event.traceId
+    events.value.push(event)
+
+    if (event.type === 'final_answer_delta') {
+      finalAnswer.value += event.content
+    }
+
+    if (event.type === 'agent_done') {
+      status.value = 'success'
+    }
+
+    if (event.type === 'agent_error') {
+      status.value = 'failed'
+      error.value = event.error
+    }
+  }
+
   async function runMock() {
     status.value = 'running'
     error.value = undefined
@@ -25,18 +46,14 @@ export function useAgentRun() {
     traceId.value = undefined
 
     try {
-      const result = await $fetch<MockAgentRunResponse>('/api/agent/mock', {
-        method: 'POST',
-        body: {
-          input: input.value
-        }
+      await openAgentStream({
+        input: input.value,
+        onEvent: applyEvent
       })
 
-      runId.value = result.runId
-      traceId.value = result.traceId
-      events.value = result.events
-      finalAnswer.value = result.finalAnswer
-      status.value = 'success'
+      if (status.value === 'running') {
+        status.value = 'success'
+      }
     } catch (runError) {
       status.value = 'failed'
       error.value = runError instanceof Error ? runError.message : 'Mock Agent Run failed'
