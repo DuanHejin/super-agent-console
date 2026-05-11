@@ -18,6 +18,7 @@
 - `components/AgentConsole.vue`：Agent Console 容器。
 - `composables/useAgentRun.ts`：Run 状态编排。先创建 conversation message / Agent Run，再订阅 run 事件流。
 - `composables/useSseStream.ts`：`GET /api/agent/runs/:runId/events` 的 SSE 读取器。
+- `pages/runs/[runId].vue`：Run 详情页，用于事后复盘一次 Agent Run。
 
 ## Agent Run 流程
 
@@ -30,6 +31,7 @@
 7. Mock SSE 速度可配置：优先使用页面 query `?sseIntervalMs=1200`，其次使用浏览器 localStorage key `agent:sseIntervalMs`；取值会限制在 100-5000 ms。
 8. 打字机效果由 `composables/useTypewriterQueue.ts` 处理；SSE chunk 应进入队列，而不是直接赋值给展示文本。
 9. 当 run 处于 `running` 时，在输出区和 Timeline 附近显示轻量 loading，不阻塞整个控制台。
+10. 执行结束后可从运行元信息进入 `/runs/:runId`，查看用户输入、事件列表、Tool / Skill 过程和最终答案。
 
 ## UI 规则
 

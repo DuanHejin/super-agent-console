@@ -1,0 +1,212 @@
+<template>
+  <main class="run-page">
+    <NuxtLink class="back-link" to="/">返回控制台</NuxtLink>
+
+    <section class="panel">
+      <h1>Run 详情</h1>
+      <p v-if="pending">正在加载 Run 详情。</p>
+      <p v-else-if="error" class="error">Run 详情加载失败：{{ error.message }}</p>
+      <template v-else-if="run">
+        <dl class="meta-grid">
+          <div>
+            <dt>runId</dt>
+            <dd>{{ run.runId }}</dd>
+          </div>
+          <div>
+            <dt>traceId</dt>
+            <dd>{{ run.traceId }}</dd>
+          </div>
+          <div>
+            <dt>status</dt>
+            <dd>{{ run.status }}</dd>
+          </div>
+          <div>
+            <dt>events</dt>
+            <dd>{{ run.events.length }}</dd>
+          </div>
+        </dl>
+      </template>
+    </section>
+
+    <template v-if="run">
+      <section class="panel">
+        <h2>用户输入</h2>
+        <pre>{{ run.input }}</pre>
+      </section>
+
+      <section class="panel">
+        <h2>最终答案</h2>
+        <pre v-if="run.finalAnswer">{{ run.finalAnswer }}</pre>
+        <p v-else>当前 Run 尚未写入最终答案。</p>
+      </section>
+
+      <section class="panel">
+        <h2>Tool / Skill 复盘</h2>
+        <ol v-if="toolSkillEvents.length" class="event-list">
+          <li v-for="event in toolSkillEvents" :key="event.eventId">
+            <strong>{{ event.sequence }}. {{ event.eventType }}</strong>
+            <small>{{ event.status }}</small>
+            <em v-if="event.name">{{ event.name }}</em>
+            <pre>{{ formatEventData(event.data) }}</pre>
+          </li>
+        </ol>
+        <p v-else>暂无 Tool / Skill 事件。</p>
+      </section>
+
+      <AgentTimeline
+        :events="run.events"
+        :status="timelineStatus"
+      />
+    </template>
+  </main>
+</template>
+
+<script setup lang="ts">
+import type { AgentEvent } from '../../types/agent-event'
+import type { AgentRunDetailResponse } from '../../types/agent-run'
+
+const route = useRoute()
+const runId = computed(() => String(route.params.runId || ''))
+const { data: run, pending, error } = await useFetch<AgentRunDetailResponse>(() => `/api/agent/runs/${runId.value}`)
+
+const toolSkillEventTypes = new Set<AgentEvent['eventType']>([
+  'tool_call_start',
+  'skill_start',
+  'skill_result',
+  'tool_call_result'
+])
+
+const toolSkillEvents = computed(() => {
+  return run.value?.events.filter((event) => toolSkillEventTypes.has(event.eventType)) ?? []
+})
+
+const timelineStatus = computed(() => {
+  if (!run.value) {
+    return 'idle'
+  }
+
+  if (run.value.status === 'completed') {
+    return 'success'
+  }
+
+  if (run.value.status === 'failed') {
+    return 'failed'
+  }
+
+  return 'running'
+})
+
+function formatEventData(data: unknown) {
+  return JSON.stringify(data, null, 2)
+}
+</script>
+
+<style scoped>
+.run-page {
+  display: grid;
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.back-link {
+  width: fit-content;
+  color: #2563eb;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.panel {
+  padding: 20px;
+  border: 1px solid #dce3e6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+h1,
+h2 {
+  margin: 0 0 12px;
+  color: #172026;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+p {
+  margin: 0;
+  color: #526068;
+}
+
+.error {
+  color: #9d2b2b;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+dt {
+  color: #526068;
+  font-size: 12px;
+}
+
+dd {
+  margin: 4px 0 0;
+  color: #172026;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+pre {
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #dce3e6;
+  border-radius: 6px;
+  background: #f7f9fa;
+  color: #172026;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.event-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #526068;
+}
+
+.event-list li {
+  margin: 10px 0;
+}
+
+strong {
+  color: #172026;
+}
+
+small {
+  display: inline-block;
+  margin-left: 8px;
+  color: #526068;
+  font-size: 12px;
+}
+
+em {
+  display: block;
+  color: #526068;
+  font-size: 13px;
+  font-style: normal;
+}
+</style>

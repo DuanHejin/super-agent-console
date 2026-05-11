@@ -1,3 +1,5 @@
+import type { AgentEvent } from './agent-event'
+
 /** 单次 Agent Run 的当前生命周期状态。 */
 export type AgentRunStatus =
   | 'created'
@@ -28,4 +30,18 @@ export interface CreateConversationMessageResponse {
   status: AgentRunStatus
   /** 为 true 时表示本次请求命中了相同 clientRequestId 对应的已有 run。 */
   idempotent: boolean
+}
+
+/** Run 详情页 / 查询接口使用的响应结构。 */
+export interface AgentRunDetailResponse {
+  conversationId: string
+  messageId: string
+  runId: string
+  traceId: string
+  status: AgentRunStatus
+  input: string
+  events: AgentEvent[]
+  finalAnswer?: string
+  createdAt: string
+  updatedAt: string
 }

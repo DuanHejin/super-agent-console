@@ -5,6 +5,7 @@
     <span>runId: {{ runId || 'pending' }}</span>
     <span>traceId: {{ traceId || 'pending' }}</span>
     <span>status: {{ status }}</span>
+    <NuxtLink v-if="runId" class="detail-link" :to="`/runs/${runId}`">查看 Run 详情</NuxtLink>
   </footer>
 </template>
 
@@ -25,5 +26,10 @@ defineProps<{
   gap: 12px;
   color: #526068;
   font-size: 14px;
+}
+
+.detail-link {
+  color: #2563eb;
+  text-decoration: none;
 }
 </style>

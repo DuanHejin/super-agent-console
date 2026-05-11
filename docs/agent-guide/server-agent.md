@@ -18,6 +18,7 @@
 - `server/api/db-check.get.ts`：数据库连通性检查。
 - `server/api/conversations/messages.post.ts`：创建 conversation message 和 Agent Run，并按 `clientRequestId` 做幂等。
 - `server/api/agent/runs/[runId]/events.get.ts`：为已存在的 run 推送 AgentEvent 流。Mock 流式间隔可通过 `intervalMs` 调整，范围限制为 100-5000 ms。
+- `server/api/agent/runs/[runId]/index.get.ts`：查询 Run 详情，用于详情页和后续 replay/trace 能力。
 - `server/utils/logger.ts`：JSON 日志。
 - `server/utils/prisma.ts`：Prisma client 单例。
 - `server/services/*`：Agent、model、tool、prompt 等服务边界。
@@ -46,6 +47,7 @@
 ## MVP Run Store
 
 - `server/services/run-store.ts` 是 MVP 阶段的内存存储，用于 conversation message 创建、Agent Run 记录和 `clientRequestId` 幂等。
+- 该存储会在 SSE 推送过程中实时追加 AgentEvent，方便详情页查询已生成事件。
 - 该存储只用于保持当前接口形态稳定，MVP 阶段暂不引入 NSQ、Redis 和完整数据库持久化。
 - 在把 run 状态视为跨进程、多副本可用之前，需要将该服务替换为 Prisma / Redis 存储。
 

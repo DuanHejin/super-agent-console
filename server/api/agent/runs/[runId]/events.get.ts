@@ -1,6 +1,7 @@
 import type { AgentEvent } from '../../../../../types/agent-event'
 import { createMockAgentRun } from '../../../../services/agent-runtime'
 import {
+  appendRunEvent,
   completeMessageRun,
   getMessageRun,
   updateRunStatus
@@ -80,6 +81,7 @@ export default defineEventHandler(async (event) => {
 
   for (const agentEvent of result.events) {
     updateRunStatus(runId, agentEvent.status)
+    appendRunEvent(runId, agentEvent)
     logAgentEvent(agentEvent)
     writeSseEvent(res, agentEvent)
     await wait(intervalMs)

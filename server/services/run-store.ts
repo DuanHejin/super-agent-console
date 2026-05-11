@@ -1,5 +1,6 @@
 import type {
   AgentRunStatus,
+  AgentRunDetailResponse,
   CreateConversationMessageRequest,
   CreateConversationMessageResponse
 } from '../../types/agent-run'
@@ -99,6 +100,22 @@ export function getMessageRun(runId: string): AgentRunRecord | undefined {
   return runs.get(runId)
 }
 
+/** 将内部 run 记录转换为可返回给前端的详情结构。 */
+export function toRunDetailResponse(run: AgentRunRecord): AgentRunDetailResponse {
+  return {
+    conversationId: run.conversationId,
+    messageId: run.messageId,
+    runId: run.runId,
+    traceId: run.traceId,
+    status: run.status,
+    input: run.input,
+    events: run.events,
+    finalAnswer: run.finalAnswer,
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt
+  }
+}
+
 /** 通过状态机守卫更新 run 状态。 */
 export function updateRunStatus(runId: string, status: AgentRunStatus) {
   const run = runs.get(runId)
@@ -113,6 +130,20 @@ export function updateRunStatus(runId: string, status: AgentRunStatus) {
   return run
 }
 
+/** 追加一条运行时事件，供详情页和未来 replay 查询。 */
+export function appendRunEvent(runId: string, event: AgentEvent) {
+  const run = runs.get(runId)
+
+  if (!run) {
+    return undefined
+  }
+
+  run.events.push(event)
+  run.updatedAt = new Date().toISOString()
+
+  return run
+}
+
 /** SSE 流结束后，把最终事件和输出写入 MVP 内存存储。 */
 export function completeMessageRun(runId: string, events: AgentEvent[], finalAnswer: string) {
   const run = runs.get(runId)
@@ -122,7 +153,7 @@ export function completeMessageRun(runId: string, events: AgentEvent[], finalAns
   }
 
   run.status = 'completed'
-  run.events = events
+  run.events = events.length >= run.events.length ? events : run.events
   run.finalAnswer = finalAnswer
   run.updatedAt = new Date().toISOString()
 
