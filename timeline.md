@@ -34,3 +34,8 @@
 - 实现 Mock Agent 主流程：新增服务端 Mock Run 接口，生成 runId、traceId、事件列表和最终输出，并在首页 Agent Console 中展示输入、Timeline、输出与运行元信息。
 - 新增 `POST /api/agent/run` SSE 流式接口，并让前端 Agent Console 通过浏览器 fetch 逐步消费 AgentEvent，实时更新 Timeline 与输出区。
 - 统一 AgentEvent 协议字段为 `eventType`、`runId`、`traceId`、`sequence`、`timestamp`，并将 SSE 推送事件同步输出为结构化 JSON 日志，方便后续 CLS 检索和数据库落库。
+
+## 2026-05-11
+
+- 新增三阶段 Agent 架构实施计划：MVP 核心链路、进阶运行能力、高阶平台能力，分别记录在 `docs/plans/mvp-agent-core-plan.md`、`docs/plans/advanced-agent-runtime-plan.md`、`docs/plans/platform-agent-capability-plan.md`，后续按 checklist 勾选推进。
+- 新增 Agent 配置化基础：用 TS 集中定义 Tool Schema、Skill Definition、Tool Workflow 和 Model 配置，并新增 mock / doubao 模型适配器骨架，为后续配置后台和真实模型接入预留扩展边界。

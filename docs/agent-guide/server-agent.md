@@ -27,6 +27,16 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - Do not log API keys, database passwords, or complete sensitive environment values.
 - Keep `.env.example` as the local template and K3S configuration mapping reference.
 
+## Agent Config Layer
+
+- Keep Tool schema, Tool workflow, Skill definition, and Model definition in `server/agent-config/`.
+- Treat these files as the code-first version of the future configuration backend: the shape should stay close to JSON-serializable data so a later admin UI can persist the same structure.
+- `server/agent-config/tools.ts` defines tool names, descriptions, parameter schemas, enabled flags, and the workflow each tool uses.
+- `server/agent-config/skills.ts` defines skill input/output schemas and the handler name that will execute the skill.
+- `server/agent-config/workflows.ts` defines Tool-to-Skill orchestration with `inputMapping`; MVP can keep execution simple, but new workflows should be added here instead of hard-coding step order inside the runtime.
+- `server/agent-config/models.ts` defines selectable model providers and default generation options.
+- `server/services/model-adapters/` is the model integration boundary. Add or switch LLM providers by implementing `ModelAdapter` instead of coupling Agent Runtime to one vendor SDK.
+
 ## Before Editing
 
 - Read `super_agent_console_codex_requirement.md`.

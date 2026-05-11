@@ -1,3 +1,6 @@
-export const toolNames = ['parseJobDescription', 'generateInterviewPlan'] as const
-
-export type ToolName = (typeof toolNames)[number]
+export {
+  getToolDefinition,
+  isToolName,
+  toolDefinitions,
+  type ToolName
+} from '../agent-config/tools'
