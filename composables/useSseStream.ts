@@ -1,7 +1,7 @@
 import type { AgentEvent } from '../types/agent-event'
 
 interface OpenAgentStreamOptions {
-  input: string
+  runId: string
   onEvent: (event: AgentEvent) => void
 }
 
@@ -14,15 +14,11 @@ export function useSseStream() {
     error.value = undefined
 
     try {
-      const response = await fetch('/api/agent/run', {
-        method: 'POST',
+      const response = await fetch(`/api/agent/runs/${options.runId}/events`, {
+        method: 'GET',
         headers: {
-          accept: 'text/event-stream',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          input: options.input
-        })
+          accept: 'text/event-stream'
+        }
       })
 
       if (!response.ok || !response.body) {

@@ -10,9 +10,12 @@ export type AgentEventType =
 
 interface AgentEventBase<T extends AgentEventType> {
   eventType: T
+  conversationId?: string
+  messageId?: string
   runId: string
   traceId: string
   sequence: number
+  status?: string
   timestamp: string
   message?: string
 }

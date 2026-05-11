@@ -16,6 +16,8 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - `server/api/health.get.ts`: process health check.
 - `server/api/ready.get.ts`: readiness/config check.
 - `server/api/db-check.get.ts`: database connectivity check.
+- `server/api/conversations/messages.post.ts`: creates a conversation message and Agent Run, with `clientRequestId` idempotency.
+- `server/api/agent/runs/[runId]/events.get.ts`: streams AgentEvent data for an existing run.
 - `server/utils/logger.ts`: JSON logger.
 - `server/utils/prisma.ts`: Prisma client singleton.
 - `server/services/*`: Agent, model, tool, and prompt boundaries.
@@ -36,6 +38,12 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - `server/agent-config/workflows.ts` defines Tool-to-Skill orchestration with `inputMapping`; MVP can keep execution simple, but new workflows should be added here instead of hard-coding step order inside the runtime.
 - `server/agent-config/models.ts` defines selectable model providers and default generation options.
 - `server/services/model-adapters/` is the model integration boundary. Add or switch LLM providers by implementing `ModelAdapter` instead of coupling Agent Runtime to one vendor SDK.
+
+## MVP Run Store
+
+- `server/services/run-store.ts` is an in-memory MVP store for conversation message creation, Agent Run records, and `clientRequestId` idempotency.
+- This store keeps the current interface shape stable while the MVP is still avoiding NSQ, Redis, and full database persistence.
+- Replace this service with Prisma / Redis backed storage before treating run state as durable across process restarts or multiple replicas.
 
 ## Before Editing
 

@@ -1,14 +1,10 @@
 import type { AgentEvent } from '../types/agent-event'
-
-interface MockAgentRunResponse {
-  runId: string
-  traceId: string
-  events: AgentEvent[]
-  finalAnswer: string
-}
+import type { CreateConversationMessageResponse } from '../types/agent-run'
 
 export function useAgentRun() {
   const status = ref<'idle' | 'running' | 'success' | 'failed'>('idle')
+  const conversationId = ref<string>()
+  const messageId = ref<string>()
   const runId = ref<string>()
   const traceId = ref<string>()
   const input = ref('')
@@ -19,6 +15,8 @@ export function useAgentRun() {
   const { openAgentStream } = useSseStream()
 
   function applyEvent(event: AgentEvent) {
+    conversationId.value = event.conversationId ?? conversationId.value
+    messageId.value = event.messageId ?? messageId.value
     runId.value = event.runId
     traceId.value = event.traceId
     events.value.push(event)
@@ -42,12 +40,27 @@ export function useAgentRun() {
     error.value = undefined
     events.value = []
     finalAnswer.value = ''
+    messageId.value = undefined
     runId.value = undefined
     traceId.value = undefined
 
     try {
+      const createRunResponse = await $fetch<CreateConversationMessageResponse>('/api/conversations/messages', {
+        method: 'POST',
+        body: {
+          conversationId: conversationId.value,
+          input: input.value,
+          clientRequestId: crypto.randomUUID()
+        }
+      })
+
+      conversationId.value = createRunResponse.conversationId
+      messageId.value = createRunResponse.messageId
+      runId.value = createRunResponse.runId
+      traceId.value = createRunResponse.traceId
+
       await openAgentStream({
-        input: input.value,
+        runId: createRunResponse.runId,
         onEvent: applyEvent
       })
 
@@ -62,6 +75,8 @@ export function useAgentRun() {
 
   function clearRun() {
     status.value = 'idle'
+    conversationId.value = undefined
+    messageId.value = undefined
     runId.value = undefined
     traceId.value = undefined
     input.value = ''
@@ -72,6 +87,8 @@ export function useAgentRun() {
 
   return {
     status,
+    conversationId,
+    messageId,
     runId,
     traceId,
     input,

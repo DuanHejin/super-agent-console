@@ -7,3 +7,11 @@ export function createTraceId() {
 export function createRunId() {
   return `run_${randomUUID()}`
 }
+
+export function createConversationId() {
+  return `conv_${randomUUID()}`
+}
+
+export function createMessageId() {
+  return `msg_${randomUUID()}`
+}

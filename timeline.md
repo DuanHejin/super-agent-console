@@ -39,3 +39,4 @@
 
 - 新增三阶段 Agent 架构实施计划：MVP 核心链路、进阶运行能力、高阶平台能力，分别记录在 `docs/plans/mvp-agent-core-plan.md`、`docs/plans/advanced-agent-runtime-plan.md`、`docs/plans/platform-agent-capability-plan.md`，后续按 checklist 勾选推进。
 - 新增 Agent 配置化基础：用 TS 集中定义 Tool Schema、Skill Definition、Tool Workflow 和 Model 配置，并新增 mock / doubao 模型适配器骨架，为后续配置后台和真实模型接入预留扩展边界。
+- 新增 MVP 双接口链路：`POST /api/conversations/messages` 创建 conversation / message / run 并按 `clientRequestId` 做幂等，`GET /api/agent/runs/:runId/events` 基于 `runId` 推送 SSE；前端发送流程同步调整为先创建 Run 再订阅事件流。

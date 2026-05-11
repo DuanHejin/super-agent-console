@@ -1,5 +1,7 @@
 <template>
   <footer class="run-meta">
+    <span>conversationId: {{ conversationId || 'pending' }}</span>
+    <span>messageId: {{ messageId || 'pending' }}</span>
     <span>runId: {{ runId || 'pending' }}</span>
     <span>traceId: {{ traceId || 'pending' }}</span>
     <span>status: {{ status }}</span>
@@ -8,6 +10,8 @@
 
 <script setup lang="ts">
 defineProps<{
+  conversationId?: string
+  messageId?: string
   runId?: string
   traceId?: string
   status: 'idle' | 'running' | 'success' | 'failed'

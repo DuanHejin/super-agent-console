@@ -16,8 +16,16 @@ This guide covers Nuxt pages, Vue components, and composables for the Agent Cons
 - `pages/index.vue`: home page shell.
 - `pages/deploy.vue`: deployment information page.
 - `components/AgentConsole.vue`: future console container.
-- `composables/useAgentRun.ts`: future run state orchestration.
-- `composables/useSseStream.ts`: future POST SSE reader.
+- `composables/useAgentRun.ts`: run state orchestration. It first creates a conversation message / Agent Run, then subscribes to the run event stream.
+- `composables/useSseStream.ts`: GET SSE reader for `GET /api/agent/runs/:runId/events`.
+
+## Agent Run Flow
+
+1. Frontend generates a `clientRequestId` for each send action.
+2. Frontend calls `POST /api/conversations/messages` with `conversationId`, `input`, and `clientRequestId`.
+3. Server returns `conversationId`, `messageId`, `runId`, `traceId`, and `status`.
+4. Frontend subscribes to `GET /api/agent/runs/:runId/events`.
+5. Streamed AgentEvent data updates the Timeline, output area, and run metadata.
 
 ## UI Rules
 

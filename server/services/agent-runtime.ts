@@ -10,6 +10,10 @@ export interface MockAgentRunResult {
 
 interface RunMockAgentOptions {
   input: string
+  conversationId?: string
+  messageId?: string
+  runId?: string
+  traceId?: string
 }
 
 export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
@@ -19,8 +23,14 @@ export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAg
 }
 
 export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunResult {
-  const runId = createRunId()
-  const traceId = createTraceId()
+  const runId = options.runId ?? createRunId()
+  const traceId = options.traceId ?? createTraceId()
+  const baseEventFields = {
+    conversationId: options.conversationId,
+    messageId: options.messageId,
+    runId,
+    traceId
+  }
   const timestamp = () => new Date().toISOString()
   let sequence = 0
   const nextSequence = () => {
@@ -42,36 +52,36 @@ export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunRe
 
   const events: AgentEvent[] = [
     {
+      ...baseEventFields,
       eventType: 'run_started',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'running',
       message: 'Mock Agent Run started',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'prompt_loaded',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'model_calling',
       promptName: 'mock-agent-default',
       message: 'Mock prompt loaded',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'model_stream_started',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'model_calling',
       model: 'mock-model',
       message: 'Mock model stream started',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'tool_call_started',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'tool_calling',
       toolCallId: 'tool_mock_parse_jd',
       toolName: 'parseJobDescription',
       args: {
@@ -81,10 +91,10 @@ export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunRe
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'tool_call_finished',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'tool_calling',
       toolCallId: 'tool_mock_parse_jd',
       toolName: 'parseJobDescription',
       result: {
@@ -95,37 +105,37 @@ export function createMockAgentRun(options: RunMockAgentOptions): MockAgentRunRe
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'model_delta',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'generating',
       content: finalAnswerChunks[0],
       message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'model_delta',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'generating',
       content: finalAnswerChunks[1],
       message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'model_delta',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'generating',
       content: finalAnswerChunks[2],
       message: 'Mock model output delta',
       timestamp: timestamp()
     },
     {
+      ...baseEventFields,
       eventType: 'run_finished',
-      runId,
-      traceId,
       sequence: nextSequence(),
+      status: 'completed',
       resultId: `result_${runId}`,
       message: 'Mock Agent Run finished',
       timestamp: timestamp()

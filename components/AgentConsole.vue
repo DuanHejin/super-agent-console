@@ -13,6 +13,8 @@
     />
     <AgentTimeline :events="events" />
     <RunMetaBar
+      :conversation-id="conversationId"
+      :message-id="messageId"
       :run-id="runId"
       :trace-id="traceId"
       :status="status"
@@ -23,6 +25,8 @@
 <script setup lang="ts">
 const {
   status,
+  conversationId,
+  messageId,
   runId,
   traceId,
   input,
