@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
 
   updateRunStatus(runId, 'running')
 
-  const result = createMockAgentRun({
+  const result = await createMockAgentRun({
     input: run.input,
     conversationId: run.conversationId,
     messageId: run.messageId,

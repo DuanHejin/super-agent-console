@@ -45,3 +45,5 @@
 - 新增 Mock SSE 推送间隔配置：服务端支持 `intervalMs` query，前端可通过页面 `sseIntervalMs` query 或 `agent:sseIntervalMs` localStorage 调整演示速度。
 - 新增通用打字机队列 composable，将模型分析流和最终答案流从“整段追加”改为字符级渐进展示。
 - 新增前端运行中 loading 交互，在 AI Output 和 Timeline 中提示当前 Agent Run 仍在执行。
+- 接入 Tool Router、轻量 JSON Schema 校验、workflow input mapping 和 Skill Executor，`analyzeJobAndGeneratePlan` Tool 已按配置编排两个 Skill 并产出实时 AgentEvent。
+- 补充 Agent 配置类型、运行状态、事件协议、Tool/Skill 执行链路等核心类型与方法注释，方便后续复盘和扩展配置后台。

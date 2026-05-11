@@ -12,16 +12,22 @@ import {
 } from '../utils/ids'
 import { transitionAgentRunStatus } from './agent-run-state'
 
+/** 单次 Agent Run 的 MVP 内存记录。后续会替换为 Prisma/Redis。 */
 export interface AgentRunRecord extends CreateConversationMessageResponse {
+  /** 触发当前 run 的用户输入。 */
   input: string
+  /** 创建 run 时使用的前端幂等 key。 */
   clientRequestId: string
+  /** MVP 阶段用于限定幂等范围的占位用户 id。 */
   userId: string
+  /** runtime 生成的事件。MVP 阶段在完成后写入内存记录。 */
   events: AgentEvent[]
   finalAnswer?: string
   createdAt: string
   updatedAt: string
 }
 
+/** 内部创建参数，允许传入 userId 作为幂等范围。 */
 interface CreateMessageRunOptions extends CreateConversationMessageRequest {
   userId?: string
 }
@@ -33,6 +39,10 @@ function getIdempotencyKey(userId: string, clientRequestId: string) {
   return `${userId}:${clientRequestId}`
 }
 
+/**
+ * 创建 conversation message 和 Agent Run。
+ * 如果相同 user/clientRequestId 已经处理过，则直接返回已有 run。
+ */
 export function createMessageRun(options: CreateMessageRunOptions): CreateConversationMessageResponse {
   const userId = options.userId ?? 'demo-user'
   const normalizedInput = options.input.trim()
@@ -84,10 +94,12 @@ export function createMessageRun(options: CreateMessageRunOptions): CreateConver
   }
 }
 
+/** 从 MVP 内存存储中查询 run。 */
 export function getMessageRun(runId: string): AgentRunRecord | undefined {
   return runs.get(runId)
 }
 
+/** 通过状态机守卫更新 run 状态。 */
 export function updateRunStatus(runId: string, status: AgentRunStatus) {
   const run = runs.get(runId)
 
@@ -101,6 +113,7 @@ export function updateRunStatus(runId: string, status: AgentRunStatus) {
   return run
 }
 
+/** SSE 流结束后，把最终事件和输出写入 MVP 内存存储。 */
 export function completeMessageRun(runId: string, events: AgentEvent[], finalAnswer: string) {
   const run = runs.get(runId)
 

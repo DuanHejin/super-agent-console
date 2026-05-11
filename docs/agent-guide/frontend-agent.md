@@ -1,45 +1,45 @@
-# Frontend Agent Guide
+# 前端 Agent 开发说明
 
-## Scope
+## 适用范围
 
-This guide covers Nuxt pages, Vue components, and composables for the Agent Console UI.
+本文档覆盖 Nuxt 页面、Vue 组件，以及 Agent Console UI 相关的 composable。
 
-## Responsibilities
+## 职责边界
 
-- Keep the first screen focused on the usable Agent Console, not a marketing landing page.
-- Render AgentEvent data in three places: AI stream output, Agent Timeline, and run metadata.
-- Keep state ownership simple: composables coordinate API/SSE state, components render UI state.
-- Preserve runId and traceId whenever they appear in streamed events.
+- 首屏应聚焦可用的 Agent Console，不做营销式落地页。
+- AgentEvent 数据需要在三个位置呈现：AI 流式输出区、Agent Timeline、运行元信息。
+- 状态归属保持简单：composable 负责协调 API/SSE 状态，组件只负责渲染 UI 状态。
+- 流式事件里出现 `runId` 和 `traceId` 时，前端必须保留并展示。
 
-## Current Entry Points
+## 当前入口
 
-- `pages/index.vue`: home page shell.
-- `pages/deploy.vue`: deployment information page.
-- `components/AgentConsole.vue`: future console container.
-- `composables/useAgentRun.ts`: run state orchestration. It first creates a conversation message / Agent Run, then subscribes to the run event stream.
-- `composables/useSseStream.ts`: GET SSE reader for `GET /api/agent/runs/:runId/events`.
+- `pages/index.vue`：首页外壳。
+- `pages/deploy.vue`：部署信息页面。
+- `components/AgentConsole.vue`：Agent Console 容器。
+- `composables/useAgentRun.ts`：Run 状态编排。先创建 conversation message / Agent Run，再订阅 run 事件流。
+- `composables/useSseStream.ts`：`GET /api/agent/runs/:runId/events` 的 SSE 读取器。
 
-## Agent Run Flow
+## Agent Run 流程
 
-1. Frontend generates a `clientRequestId` for each send action.
-2. Frontend calls `POST /api/conversations/messages` with `conversationId`, `input`, and `clientRequestId`.
-3. Server returns `conversationId`, `messageId`, `runId`, `traceId`, and `status`.
-4. Frontend subscribes to `GET /api/agent/runs/:runId/events`.
-5. Streamed AgentEvent data updates the Timeline, output area, and run metadata.
-6. `model_text_delta` updates the model analysis stream, `final_answer_delta` updates the final answer stream, and Tool / Skill events expose their `data` payload in the Timeline.
-7. Mock SSE speed is configurable for demos: use page query `?sseIntervalMs=1200` first, or browser localStorage key `agent:sseIntervalMs`; values are clamped to 100-5000 ms.
-8. Typewriter rendering is handled by `composables/useTypewriterQueue.ts`; SSE chunks should be enqueued there instead of directly assigning display text.
-9. While a run is `running`, show lightweight loading affordances near output and Timeline instead of blocking the whole console.
+1. 前端每次发送时生成一个 `clientRequestId`。
+2. 前端调用 `POST /api/conversations/messages`，传入 `conversationId`、`input` 和 `clientRequestId`。
+3. 服务端返回 `conversationId`、`messageId`、`runId`、`traceId` 和 `status`。
+4. 前端订阅 `GET /api/agent/runs/:runId/events`。
+5. 流式 AgentEvent 更新 Timeline、输出区和运行元信息。
+6. `model_text_delta` 更新模型分析流，`final_answer_delta` 更新最终答案流，Tool / Skill 事件在 Timeline 中展示 `data` 负载。
+7. Mock SSE 速度可配置：优先使用页面 query `?sseIntervalMs=1200`，其次使用浏览器 localStorage key `agent:sseIntervalMs`；取值会限制在 100-5000 ms。
+8. 打字机效果由 `composables/useTypewriterQueue.ts` 处理；SSE chunk 应进入队列，而不是直接赋值给展示文本。
+9. 当 run 处于 `running` 时，在输出区和 Timeline 附近显示轻量 loading，不阻塞整个控制台。
 
-## UI Rules
+## UI 规则
 
-- Keep controls compact and work-focused.
-- Avoid complex UI libraries during MVP.
-- Ensure text does not overflow on mobile.
-- Prefer clear event/status labels over decorative UI.
+- 控件保持紧凑、偏工作台风格。
+- MVP 阶段避免引入复杂 UI 库。
+- 移动端不能出现文本溢出。
+- 优先使用清晰的事件/状态标签，不做过度装饰。
 
-## Before Editing
+## 修改前检查
 
-- Read `super_agent_console_codex_requirement.md`.
-- Check `timeline.md` and append project-related changes after meaningful work.
-- Keep frontend changes aligned with the AgentEvent protocol in `types/agent-event.ts`.
+- 先阅读 `super_agent_console_codex_requirement.md`。
+- 完成有意义的项目改动后，检查并更新 `timeline.md`。
+- 前端改动必须和 `types/agent-event.ts` 中的 AgentEvent 协议保持一致。

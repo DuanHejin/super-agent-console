@@ -14,7 +14,7 @@ function writeSseEvent(res: typeof import('node:http').ServerResponse.prototype,
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ input?: string }>(event)
   const input = body.input || ''
-  const result = createMockAgentRun({ input })
+  const result = await createMockAgentRun({ input })
   const res = event.node.res
 
   setResponseHeaders(event, {
