@@ -1,49 +1,29 @@
-export type AgentEventType =
-  | 'run_started'
-  | 'prompt_loaded'
-  | 'model_stream_started'
-  | 'tool_call_started'
-  | 'tool_call_finished'
-  | 'model_delta'
-  | 'run_finished'
-  | 'run_failed'
+import type { AgentRunStatus } from './agent-run'
 
-interface AgentEventBase<T extends AgentEventType> {
-  eventType: T
-  conversationId?: string
-  messageId?: string
+export type AgentEventType =
+  | 'agent_start'
+  | 'prompt_loaded'
+  | 'model_call_start'
+  | 'model_text_delta'
+  | 'tool_call_start'
+  | 'skill_start'
+  | 'skill_result'
+  | 'tool_call_result'
+  | 'final_answer_delta'
+  | 'agent_done'
+  | 'agent_error'
+
+export interface AgentEvent<TData = Record<string, unknown>> {
+  eventId: string
+  eventType: AgentEventType
+  conversationId: string
+  messageId: string
   runId: string
   traceId: string
   sequence: number
-  status?: string
+  status: AgentRunStatus
   timestamp: string
+  name?: string
+  data: TData
   message?: string
 }
-
-export type AgentEvent =
-  | AgentEventBase<'run_started'>
-  | (AgentEventBase<'prompt_loaded'> & {
-      promptName: string
-    })
-  | (AgentEventBase<'model_stream_started'> & {
-      model: string
-    })
-  | (AgentEventBase<'tool_call_started'> & {
-      toolCallId: string
-      toolName: string
-      args: unknown
-    })
-  | (AgentEventBase<'tool_call_finished'> & {
-      toolCallId: string
-      toolName: string
-      result: unknown
-    })
-  | (AgentEventBase<'model_delta'> & {
-      content: string
-    })
-  | (AgentEventBase<'run_finished'> & {
-      resultId?: string
-    })
-  | (AgentEventBase<'run_failed'> & {
-      errorMessage: string
-    })

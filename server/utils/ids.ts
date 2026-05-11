@@ -15,3 +15,15 @@ export function createConversationId() {
 export function createMessageId() {
   return `msg_${randomUUID()}`
 }
+
+export function createEventId() {
+  return `evt_${randomUUID()}`
+}
+
+export function createToolCallId() {
+  return `tool_call_${randomUUID()}`
+}
+
+export function createSkillRunId() {
+  return `skill_run_${randomUUID()}`
+}

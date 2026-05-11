@@ -9,7 +9,10 @@ export function useAgentRun() {
   const traceId = ref<string>()
   const input = ref('')
   const events = ref<AgentEvent[]>([])
-  const finalAnswer = ref('')
+  const modelAnalysisTypewriter = useTypewriterQueue()
+  const finalAnswerTypewriter = useTypewriterQueue()
+  const modelAnalysis = modelAnalysisTypewriter.output
+  const finalAnswer = finalAnswerTypewriter.output
   const error = ref<string>()
 
   const { openAgentStream } = useSseStream()
@@ -21,17 +24,25 @@ export function useAgentRun() {
     traceId.value = event.traceId
     events.value.push(event)
 
-    if (event.eventType === 'model_delta') {
-      finalAnswer.value += event.content
+    if (event.eventType === 'model_text_delta') {
+      if (typeof event.data.content === 'string') {
+        modelAnalysisTypewriter.enqueue(event.data.content)
+      }
     }
 
-    if (event.eventType === 'run_finished') {
+    if (event.eventType === 'final_answer_delta') {
+      if (typeof event.data.content === 'string') {
+        finalAnswerTypewriter.enqueue(event.data.content)
+      }
+    }
+
+    if (event.eventType === 'agent_done') {
       status.value = 'success'
     }
 
-    if (event.eventType === 'run_failed') {
+    if (event.eventType === 'agent_error') {
       status.value = 'failed'
-      error.value = event.errorMessage
+      error.value = typeof event.data.errorMessage === 'string' ? event.data.errorMessage : 'Agent Run failed'
     }
   }
 
@@ -39,7 +50,8 @@ export function useAgentRun() {
     status.value = 'running'
     error.value = undefined
     events.value = []
-    finalAnswer.value = ''
+    modelAnalysisTypewriter.reset()
+    finalAnswerTypewriter.reset()
     messageId.value = undefined
     runId.value = undefined
     traceId.value = undefined
@@ -81,7 +93,8 @@ export function useAgentRun() {
     traceId.value = undefined
     input.value = ''
     events.value = []
-    finalAnswer.value = ''
+    modelAnalysisTypewriter.reset()
+    finalAnswerTypewriter.reset()
     error.value = undefined
   }
 
@@ -93,6 +106,7 @@ export function useAgentRun() {
     traceId,
     input,
     events,
+    modelAnalysis,
     finalAnswer,
     error,
     runMock,

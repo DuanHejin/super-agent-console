@@ -40,3 +40,8 @@
 - 新增三阶段 Agent 架构实施计划：MVP 核心链路、进阶运行能力、高阶平台能力，分别记录在 `docs/plans/mvp-agent-core-plan.md`、`docs/plans/advanced-agent-runtime-plan.md`、`docs/plans/platform-agent-capability-plan.md`，后续按 checklist 勾选推进。
 - 新增 Agent 配置化基础：用 TS 集中定义 Tool Schema、Skill Definition、Tool Workflow 和 Model 配置，并新增 mock / doubao 模型适配器骨架，为后续配置后台和真实模型接入预留扩展边界。
 - 新增 MVP 双接口链路：`POST /api/conversations/messages` 创建 conversation / message / run 并按 `clientRequestId` 做幂等，`GET /api/agent/runs/:runId/events` 基于 `runId` 推送 SSE；前端发送流程同步调整为先创建 Run 再订阅事件流。
+- 统一 AgentEvent MVP 协议，新增 `eventId`、`status`、`data` 等标准字段，并引入 Agent Run 状态机校验，明确区分事件类型与运行状态。
+- 补齐 Agent 全过程流式展示：模型分析阶段通过 `model_text_delta` 推送，Tool 调用、Skill 输入、Skill 结果和最终答案均通过 AgentEvent 实时展示到前端。
+- 新增 Mock SSE 推送间隔配置：服务端支持 `intervalMs` query，前端可通过页面 `sseIntervalMs` query 或 `agent:sseIntervalMs` localStorage 调整演示速度。
+- 新增通用打字机队列 composable，将模型分析流和最终答案流从“整段追加”改为字符级渐进展示。
+- 新增前端运行中 loading 交互，在 AI Output 和 Timeline 中提示当前 Agent Run 仍在执行。

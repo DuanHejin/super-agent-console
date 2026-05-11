@@ -7,11 +7,15 @@
       @clear="clearRun"
     />
     <AgentStreamOutput
+      :analysis-content="modelAnalysis"
       :content="finalAnswer"
       :error="error"
       :status="status"
     />
-    <AgentTimeline :events="events" />
+    <AgentTimeline
+      :events="events"
+      :status="status"
+    />
     <RunMetaBar
       :conversation-id="conversationId"
       :message-id="messageId"
@@ -31,6 +35,7 @@ const {
   traceId,
   input,
   events,
+  modelAnalysis,
   finalAnswer,
   error,
   runMock,

@@ -10,6 +10,7 @@ import {
   createRunId,
   createTraceId
 } from '../utils/ids'
+import { transitionAgentRunStatus } from './agent-run-state'
 
 export interface AgentRunRecord extends CreateConversationMessageResponse {
   input: string
@@ -94,7 +95,7 @@ export function updateRunStatus(runId: string, status: AgentRunStatus) {
     return undefined
   }
 
-  run.status = status
+  run.status = transitionAgentRunStatus(run.status, status)
   run.updatedAt = new Date().toISOString()
 
   return run

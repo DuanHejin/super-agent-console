@@ -26,6 +26,10 @@ This guide covers Nuxt pages, Vue components, and composables for the Agent Cons
 3. Server returns `conversationId`, `messageId`, `runId`, `traceId`, and `status`.
 4. Frontend subscribes to `GET /api/agent/runs/:runId/events`.
 5. Streamed AgentEvent data updates the Timeline, output area, and run metadata.
+6. `model_text_delta` updates the model analysis stream, `final_answer_delta` updates the final answer stream, and Tool / Skill events expose their `data` payload in the Timeline.
+7. Mock SSE speed is configurable for demos: use page query `?sseIntervalMs=1200` first, or browser localStorage key `agent:sseIntervalMs`; values are clamped to 100-5000 ms.
+8. Typewriter rendering is handled by `composables/useTypewriterQueue.ts`; SSE chunks should be enqueued there instead of directly assigning display text.
+9. While a run is `running`, show lightweight loading affordances near output and Timeline instead of blocking the whole console.
 
 ## UI Rules
 

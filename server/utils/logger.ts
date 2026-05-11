@@ -11,13 +11,16 @@ export const logger = pino({
 })
 
 export function logAgentEvent(event: AgentEvent) {
-  const { eventType, runId, traceId, sequence, timestamp, message } = event
+  const { eventId, eventType, runId, traceId, sequence, status, timestamp, name, message } = event
 
   logger.info({
+    eventId,
     eventType,
     runId,
     traceId,
     sequence,
+    status,
+    name,
     eventTimestamp: timestamp,
     message: message || eventType
   })

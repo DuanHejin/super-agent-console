@@ -17,7 +17,7 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - `server/api/ready.get.ts`: readiness/config check.
 - `server/api/db-check.get.ts`: database connectivity check.
 - `server/api/conversations/messages.post.ts`: creates a conversation message and Agent Run, with `clientRequestId` idempotency.
-- `server/api/agent/runs/[runId]/events.get.ts`: streams AgentEvent data for an existing run.
+- `server/api/agent/runs/[runId]/events.get.ts`: streams AgentEvent data for an existing run. Mock stream interval can be tuned with `intervalMs`, clamped to 100-5000 ms.
 - `server/utils/logger.ts`: JSON logger.
 - `server/utils/prisma.ts`: Prisma client singleton.
 - `server/services/*`: Agent, model, tool, and prompt boundaries.
@@ -50,4 +50,6 @@ This guide covers Nitro server APIs, Agent Runtime services, logging, configurat
 - Read `super_agent_console_codex_requirement.md`.
 - Check `timeline.md` and append project-related changes after meaningful work.
 - Keep server changes compatible with Docker, K3S, and JSON stdout logs.
-- Agent runtime events should use the shared `AgentEvent` protocol with `eventType`, `runId`, `traceId`, `sequence`, and `timestamp` so frontend Timeline, logs, and future database records can be correlated.
+- Agent runtime events should use the shared `AgentEvent` protocol with `eventId`, `eventType`, `conversationId`, `messageId`, `runId`, `traceId`, `sequence`, `status`, `timestamp`, and `data` so frontend Timeline, logs, and future database records can be correlated.
+- Treat `eventType` as "what happened" and `status` as "where the Agent Run is now"; do not mix the two concepts.
+- Stream the whole Agent process, not only the final answer: model analysis uses `model_text_delta`, Skill inputs are included in `skill_start.data.input`, Skill outputs are included in `skill_result.data.result`, and final answer chunks use `final_answer_delta`.

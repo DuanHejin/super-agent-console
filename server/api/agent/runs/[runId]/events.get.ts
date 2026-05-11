@@ -11,6 +11,17 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function resolveIntervalMs(value: unknown) {
+  const rawValue = Array.isArray(value) ? value[0] : value
+  const parsed = Number(rawValue)
+
+  if (!Number.isFinite(parsed)) {
+    return 800
+  }
+
+  return Math.min(Math.max(parsed, 100), 5000)
+}
+
 function writeSseEvent(res: typeof import('node:http').ServerResponse.prototype, event: AgentEvent) {
   res.write(`event: ${event.eventType}\n`)
   res.write(`data: ${JSON.stringify(event)}\n\n`)
@@ -18,6 +29,8 @@ function writeSseEvent(res: typeof import('node:http').ServerResponse.prototype,
 
 export default defineEventHandler(async (event) => {
   const runId = getRouterParam(event, 'runId')
+  const query = getQuery(event)
+  const intervalMs = resolveIntervalMs(query.intervalMs)
 
   if (!runId) {
     throw createError({
@@ -61,17 +74,15 @@ export default defineEventHandler(async (event) => {
     runId: run.runId,
     traceId: run.traceId,
     eventCount: result.events.length,
+    intervalMs,
     message: 'Agent Run event stream started'
   })
 
   for (const agentEvent of result.events) {
-    if (agentEvent.status) {
-      updateRunStatus(runId, agentEvent.status)
-    }
-
+    updateRunStatus(runId, agentEvent.status)
     logAgentEvent(agentEvent)
     writeSseEvent(res, agentEvent)
-    await wait(260)
+    await wait(intervalMs)
   }
 
   completeMessageRun(runId, result.events, result.finalAnswer)
