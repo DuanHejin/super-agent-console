@@ -22,13 +22,15 @@
 - `server/utils/logger.ts`：JSON 日志。
 - `server/utils/prisma.ts`：Prisma client 单例。
 - `server/services/*`：Agent、model、tool、prompt 等服务边界。
+- `prisma/schema.prisma`：MVP 数据模型定义，覆盖 Conversation、Message、AgentRun、AgentEvent、ToolCall、SkillRun 和 IdempotencyRecord。
 
 ## 配置规则
 
-- 本地开发读取 `.env`。
+- 本地开发读取 `.env.local`，数据库优先连接本机 MySQL。
 - 生产配置优先通过 K3S ConfigMap / Secret 注入。
+- 线上数据库连接 K3S 内部 MySQL Service：`mysql:3306`。
 - 不要打印 API key、数据库密码或完整敏感环境变量值。
-- `.env.example` 作为本地开发模板和 K3S 配置映射参考。
+- `.env.example` 作为本地开发模板和 K3S 配置映射参考，`DATABASE_URL` 示例默认指向本机 MySQL dev 库。
 
 ## Agent 配置层
 
@@ -50,6 +52,7 @@
 - 该存储会在 SSE 推送过程中实时追加 AgentEvent，方便详情页查询已生成事件。
 - 该存储只用于保持当前接口形态稳定，MVP 阶段暂不引入 NSQ、Redis 和完整数据库持久化。
 - 在把 run 状态视为跨进程、多副本可用之前，需要将该服务替换为 Prisma / Redis 存储。
+- `prisma/schema.prisma` 已先定义持久化模型，但当前运行时还没有切换到 Prisma 写入。
 
 ## 修改前检查
 

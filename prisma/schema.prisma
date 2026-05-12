@@ -7,61 +7,172 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MessageRole {
+  system
+  developer
+  user
+  assistant
+  tool
+}
+
+enum AgentRunStatus {
+  created
+  running
+  model_calling
+  tool_calling
+  skill_running
+  generating
+  completed
+  failed
+}
+
+enum ToolCallStatus {
+  created
+  running
+  completed
+  failed
+}
+
+enum SkillRunStatus {
+  created
+  running
+  completed
+  failed
+}
+
 model Conversation {
-  id        String     @id @default(cuid())
-  title     String?
+  id        String     @id @default(cuid()) @db.VarChar(64)
+  title     String?    @db.VarChar(255)
   messages  Message[]
   runs      AgentRun[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+
+  @@index([createdAt])
 }
 
 model Message {
-  id             String        @id @default(cuid())
-  conversationId String?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
-  role           String
-  content        String        @db.Text
-  runId          String?
-  createdAt      DateTime      @default(now())
+  id             String       @id @default(cuid()) @db.VarChar(64)
+  conversationId String       @db.VarChar(64)
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  role           MessageRole
+  content        String       @db.Text
+  agentRun       AgentRun?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([conversationId, createdAt])
 }
 
 model AgentRun {
-  id             String        @id @default(cuid())
-  conversationId String?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
-  traceId        String
-  userInput      String        @db.Text
-  status         String
-  finalOutput    String?       @db.Text
-  startedAt      DateTime      @default(now())
-  endedAt        DateTime?
+  id             String         @id @default(cuid()) @db.VarChar(64)
+  conversationId String         @db.VarChar(64)
+  conversation   Conversation   @relation(fields: [conversationId], references: [id])
+  messageId      String         @unique @db.VarChar(64)
+  message        Message        @relation(fields: [messageId], references: [id])
+  traceId        String         @db.VarChar(64)
+  status         AgentRunStatus @default(created)
+  input          String         @db.Text
+  finalAnswer    String?        @db.Text
+  errorMessage   String?        @db.Text
   events         AgentEvent[]
   toolCalls      ToolCall[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  skillRuns      SkillRun[]
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([traceId])
+  @@index([status, createdAt])
 }
 
 model AgentEvent {
-  id        String   @id @default(cuid())
-  runId     String
-  run       AgentRun @relation(fields: [runId], references: [id])
-  traceId   String
-  type      String
-  payload   Json
-  createdAt DateTime @default(now())
+  id             String         @id @default(cuid()) @db.VarChar(64)
+  eventId        String         @unique @db.VarChar(64)
+  runId          String         @db.VarChar(64)
+  run            AgentRun       @relation(fields: [runId], references: [id])
+  toolCallId     String?        @db.VarChar(64)
+  toolCall       ToolCall?      @relation(fields: [toolCallId], references: [id])
+  skillRunId     String?        @db.VarChar(64)
+  skillRun       SkillRun?      @relation(fields: [skillRunId], references: [id])
+  conversationId String         @db.VarChar(64)
+  messageId      String         @db.VarChar(64)
+  traceId        String         @db.VarChar(64)
+  eventType      String         @db.VarChar(64)
+  sequence       Int
+  status         AgentRunStatus
+  name           String?        @db.VarChar(255)
+  message        String?        @db.Text
+  data           Json
+  timestamp      DateTime
+  createdAt      DateTime       @default(now())
+
+  @@unique([runId, sequence])
+  @@index([runId, createdAt])
+  @@index([traceId])
+  @@index([eventType])
 }
 
 model ToolCall {
-  id        String   @id @default(cuid())
-  runId     String
-  run       AgentRun @relation(fields: [runId], references: [id])
-  traceId   String
-  toolName  String
-  arguments Json
-  result    Json?
-  status    String
-  startedAt DateTime @default(now())
-  endedAt   DateTime?
-  createdAt DateTime @default(now())
+  id          String         @id @default(cuid()) @db.VarChar(64)
+  toolCallId  String         @unique @db.VarChar(64)
+  runId       String         @db.VarChar(64)
+  run         AgentRun       @relation(fields: [runId], references: [id])
+  traceId     String         @db.VarChar(64)
+  toolName    String         @db.VarChar(128)
+  arguments   Json
+  result      Json?
+  status      ToolCallStatus @default(created)
+  events      AgentEvent[]
+  skillRuns   SkillRun[]
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([runId, createdAt])
+  @@index([traceId])
+  @@index([toolName])
+}
+
+model SkillRun {
+  id          String         @id @default(cuid()) @db.VarChar(64)
+  skillRunId  String         @unique @db.VarChar(64)
+  runId       String         @db.VarChar(64)
+  run         AgentRun       @relation(fields: [runId], references: [id])
+  toolCallId  String?        @db.VarChar(64)
+  toolCall    ToolCall?      @relation(fields: [toolCallId], references: [id])
+  traceId     String         @db.VarChar(64)
+  stepId      String         @db.VarChar(128)
+  skillName   String         @db.VarChar(128)
+  input       Json
+  result      Json?
+  status      SkillRunStatus @default(created)
+  events      AgentEvent[]
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([runId, createdAt])
+  @@index([toolCallId, createdAt])
+  @@index([traceId])
+  @@index([skillName])
+}
+
+model IdempotencyRecord {
+  id              String   @id @default(cuid()) @db.VarChar(64)
+  userId          String   @db.VarChar(128)
+  clientRequestId String   @db.VarChar(128)
+  conversationId  String   @db.VarChar(64)
+  messageId       String   @db.VarChar(64)
+  runId           String   @db.VarChar(64)
+  response        Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, clientRequestId])
+  @@index([runId])
 }

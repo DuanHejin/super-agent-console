@@ -134,6 +134,24 @@ kubectl rollout restart deployment/my-web-app -n default
 kubectl rollout status deployment/my-web-app -n default
 ```
 
+## MySQL
+
+MVP 阶段的数据库策略：
+
+```txt
+本地开发：本机 MySQL 8.0
+线上运行：K3S 自建单节点 MySQL 8.0
+临时排查：必要时通过 SSH + kubectl 双层转发连接 K3S MySQL
+```
+
+部署和开发说明见：
+
+```txt
+docs/k3s-mysql.md
+```
+
+K3S MySQL 不配置 Ingress，不对公网暴露。线上应用通过 K3S 内部 Service `mysql:3306` 访问；本地开发优先连接本机 MySQL。表结构通过 Prisma migration 文件同步到线上。
+
 ## CLS Log Collection
 
 Current logging path:

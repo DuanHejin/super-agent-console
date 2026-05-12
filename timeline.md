@@ -53,3 +53,9 @@
 ## 2026-05-12
 
 - 新增 `tool_progress_delta` 和 `skill_progress_delta` 事件，让 Tool 编排层和 Skill handler 的中间态输出也能通过 SSE 实时展示到 Timeline、过程卡片和 Run 详情页。
+- 完善 Prisma MVP 数据模型，补齐 Conversation、Message、AgentRun、AgentEvent、ToolCall、SkillRun 和 IdempotencyRecord，为后续替换内存 run-store 做准备。
+- 新增 K3S 自建 MySQL 部署说明，记录 Secret、PVC、Deployment、Service、可选生产库初始化 Job、本地 port-forward 和 Prisma migration 操作步骤。
+- 补充本地访问 K3S MySQL 的双转发链路说明，记录 OrcaTerm `kubectl port-forward`、本地 SSH 隧道、连通性验证和可视化客户端连接参数。
+- 修正 K3S MySQL 文档中的本地连接说明，统一使用敏感值占位符，并补充端口监听、连通性、Prisma 连接和常见错误检查 case。
+- 调整数据库开发策略：本地开发改为连接本机 MySQL，K3S MySQL 保留为线上 / 类生产库，双层转发仅作为临时排查手段。
+- 更新 `.env.example` 的 `DATABASE_URL` 示例，默认指向本机 MySQL dev 库和应用账号。
