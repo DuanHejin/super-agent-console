@@ -2,7 +2,8 @@ import type {
   CreateConversationMessageRequest,
   CreateConversationMessageResponse
 } from '../../../types/agent-run'
-import { createMessageRun } from '../../services/run-store'
+import { createPersistedMessageRun } from '../../services/run-persistence'
+import { createMessageRun, getMessageRun } from '../../services/run-store'
 import { logger } from '../../utils/logger'
 
 export default defineEventHandler(async (event): Promise<CreateConversationMessageResponse> => {
@@ -29,6 +30,24 @@ export default defineEventHandler(async (event): Promise<CreateConversationMessa
     input,
     clientRequestId
   })
+
+  const run = getMessageRun(response.runId)
+
+  if (run) {
+    try {
+      await createPersistedMessageRun(run, response.idempotent)
+    } catch (persistenceError) {
+      logger.warn({
+        eventType: 'agent_run_persist_failed',
+        conversationId: response.conversationId,
+        messageId: response.messageId,
+        runId: response.runId,
+        traceId: response.traceId,
+        errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+        message: 'Agent Run persisted failed, fallback to memory run-store'
+      })
+    }
+  }
 
   logger.info({
     eventType: 'agent_run_created',

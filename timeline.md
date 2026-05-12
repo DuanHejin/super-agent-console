@@ -59,3 +59,5 @@
 - 修正 K3S MySQL 文档中的本地连接说明，统一使用敏感值占位符，并补充端口监听、连通性、Prisma 连接和常见错误检查 case。
 - 调整数据库开发策略：本地开发改为连接本机 MySQL，K3S MySQL 保留为线上 / 类生产库，双层转发仅作为临时排查手段。
 - 更新 `.env.example` 的 `DATABASE_URL` 示例，默认指向本机 MySQL dev 库和应用账号。
+- 新增 Prisma 持久化服务，将 mock Agent Run 的 Conversation、Message、AgentRun、IdempotencyRecord、AgentEvent、ToolCall 和 SkillRun 写入 MySQL，并让 Run 详情接口优先读取数据库。
+- 调整本地 dev 脚本为 `nuxt dev --dotenv .env.local`，确保 Prisma runtime 能读取本机 MySQL 的 `DATABASE_URL`。

@@ -21,12 +21,14 @@
 - `server/api/agent/runs/[runId]/index.get.ts`：查询 Run 详情，用于详情页和后续 replay/trace 能力。
 - `server/utils/logger.ts`：JSON 日志。
 - `server/utils/prisma.ts`：Prisma client 单例。
+- `server/services/run-persistence.ts`：Prisma 持久化服务，负责将 mock Agent Run、AgentEvent、ToolCall 和 SkillRun 写入数据库。
 - `server/services/*`：Agent、model、tool、prompt 等服务边界。
 - `prisma/schema.prisma`：MVP 数据模型定义，覆盖 Conversation、Message、AgentRun、AgentEvent、ToolCall、SkillRun 和 IdempotencyRecord。
 
 ## 配置规则
 
 - 本地开发读取 `.env.local`，数据库优先连接本机 MySQL。
+- `npm run dev` 已通过 `nuxt dev --dotenv .env.local` 显式加载本地环境变量；如果缺少 `DATABASE_URL`，Prisma 落库会失败并回退到内存 run-store。
 - 生产配置优先通过 K3S ConfigMap / Secret 注入。
 - 线上数据库连接 K3S 内部 MySQL Service：`mysql:3306`。
 - 不要打印 API key、数据库密码或完整敏感环境变量值。
@@ -46,13 +48,13 @@
 - `server/services/skill-executor.ts` 将 Skill `handlerName` 映射到具体执行函数，并校验 Skill 输入/输出 schema。
 - `server/services/workflow-input-mapping.ts` 解析代码配置中的映射表达式，例如 `$toolArgs.jdText` 和 `$steps.extract-requirements.output`。
 
-## MVP Run Store
+## MVP Run Store 与持久化
 
 - `server/services/run-store.ts` 是 MVP 阶段的内存存储，用于 conversation message 创建、Agent Run 记录和 `clientRequestId` 幂等。
 - 该存储会在 SSE 推送过程中实时追加 AgentEvent，方便详情页查询已生成事件。
-- 该存储只用于保持当前接口形态稳定，MVP 阶段暂不引入 NSQ、Redis 和完整数据库持久化。
-- 在把 run 状态视为跨进程、多副本可用之前，需要将该服务替换为 Prisma / Redis 存储。
-- `prisma/schema.prisma` 已先定义持久化模型，但当前运行时还没有切换到 Prisma 写入。
+- `server/services/run-persistence.ts` 会把同一条 mock 链路同步写入 Prisma：创建 Conversation / Message / AgentRun / IdempotencyRecord，推送时写 AgentEvent，并按事件维护 ToolCall / SkillRun。
+- Run 详情接口优先读取数据库，读取失败或未命中时回退到内存 run-store。
+- 当前仍保留内存 run-store，目的是让 SSE 演示链路在数据库短暂不可用时仍可运行；后续接入 NSQ / Redis 后再替换为更完整的跨进程存储。
 
 ## 修改前检查
 

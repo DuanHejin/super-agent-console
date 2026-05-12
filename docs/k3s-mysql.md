@@ -66,6 +66,8 @@ docker start super-agent-console-mysql
 DATABASE_URL=mysql://sac_app:<MYSQL_APP_PASSWORD>@127.0.0.1:3306/super_agent_console_dev
 ```
 
+项目的 `npm run dev` 会执行 `nuxt dev --dotenv .env.local`，因此启动前必须确保 `.env.local` 中存在 `DATABASE_URL`。如果终端日志出现 `Environment variable not found: DATABASE_URL`，说明当前 dev 进程没有加载到 `.env.local`，需要重启 dev server。
+
 本地可视化客户端连接参数：
 
 ```txt

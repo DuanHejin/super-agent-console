@@ -1,6 +1,11 @@
 import type { AgentEvent } from '../../../../../types/agent-event'
 import { createMockAgentRun } from '../../../../services/agent-runtime'
 import {
+  completePersistedMessageRun,
+  persistAgentEvent,
+  updatePersistedRunStatus
+} from '../../../../services/run-persistence'
+import {
   appendRunEvent,
   completeMessageRun,
   getMessageRun,
@@ -59,6 +64,16 @@ export default defineEventHandler(async (event) => {
   })
 
   updateRunStatus(runId, 'running')
+  try {
+    await updatePersistedRunStatus(runId, 'running')
+  } catch (persistenceError) {
+    logger.warn({
+      eventType: 'agent_run_status_persist_failed',
+      runId,
+      errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+      message: 'Agent Run status persisted failed, fallback to memory run-store'
+    })
+  }
 
   const result = await createMockAgentRun({
     input: run.input,
@@ -82,12 +97,37 @@ export default defineEventHandler(async (event) => {
   for (const agentEvent of result.events) {
     updateRunStatus(runId, agentEvent.status)
     appendRunEvent(runId, agentEvent)
+    try {
+      await persistAgentEvent(agentEvent)
+    } catch (persistenceError) {
+      logger.warn({
+        eventType: 'agent_event_persist_failed',
+        eventId: agentEvent.eventId,
+        agentEventType: agentEvent.eventType,
+        runId: agentEvent.runId,
+        traceId: agentEvent.traceId,
+        sequence: agentEvent.sequence,
+        errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+        message: 'AgentEvent persisted failed, fallback to memory run-store'
+      })
+    }
     logAgentEvent(agentEvent)
     writeSseEvent(res, agentEvent)
     await wait(intervalMs)
   }
 
   completeMessageRun(runId, result.events, result.finalAnswer)
+  try {
+    await completePersistedMessageRun(runId, result.finalAnswer)
+  } catch (persistenceError) {
+    logger.warn({
+      eventType: 'agent_run_complete_persist_failed',
+      runId,
+      traceId: run.traceId,
+      errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+      message: 'Agent Run completion persisted failed, fallback to memory run-store'
+    })
+  }
 
   res.write('event: done\n')
   res.write('data: [DONE]\n\n')

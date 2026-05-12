@@ -202,6 +202,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
           name: skillExecution.skillName,
           data: {
             toolCallId,
+            stepId: skillExecution.stepId,
             skillRunId: skillExecution.skillRunId,
             skillName: skillExecution.skillName,
             input: skillExecution.input
@@ -218,6 +219,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
           name: skillExecution.skillName,
           data: {
             toolCallId,
+            stepId: skillExecution.stepId,
             skillRunId: skillExecution.skillRunId,
             skillName: skillExecution.skillName,
             content: delta.content,
@@ -236,6 +238,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
           name: skillExecution.skillName,
           data: {
             toolCallId,
+            stepId: skillExecution.stepId,
             skillRunId: skillExecution.skillRunId,
             skillName: skillExecution.skillName,
             result: skillExecution.result
