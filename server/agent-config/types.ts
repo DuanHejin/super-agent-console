@@ -132,7 +132,7 @@ export interface ModelToolCall {
 export interface ModelRequest {
   messages: ModelMessage[]
   /** 当前可提供给模型的 enabled Tool 定义。 */
-  tools?: ToolDefinition[]
+  tools?: readonly ToolDefinition[]
   temperature?: number
   topP?: number
   maxTokens?: number

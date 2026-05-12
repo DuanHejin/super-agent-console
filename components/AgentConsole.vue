@@ -12,6 +12,10 @@
       :error="error"
       :status="status"
     />
+    <ToolCallCard
+      :tools="toolProcesses"
+      :status="status"
+    />
     <AgentTimeline
       :events="events"
       :status="status"
@@ -35,6 +39,7 @@ const {
   traceId,
   input,
   events,
+  toolProcesses,
   modelAnalysis,
   finalAnswer,
   error,

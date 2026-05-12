@@ -74,7 +74,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
   const finalAnswer = [
     `已收到输入：${inputPreview}`,
     '这是一次 Mock Agent Run，用于验证前端输入、服务端编排、Timeline 展示和运行元信息。',
-    '下一阶段会把这条链路改造成 SSE 流式事件。'
+    '当前阶段已经可以通过 SSE 展示模型分析、Tool 调用、Skill 执行和最终答案。'
   ].join('\n')
   const finalAnswerChunks = [
     `已收到输入：${inputPreview}\n`,
@@ -177,6 +177,23 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
   const toolExecution = await executeTool({
     name: toolCall.name,
     args: toolCall.arguments,
+    onToolProgress(delta) {
+      events.push(
+        createEvent({
+          eventType: 'tool_progress_delta',
+          status: 'tool_calling',
+          name: toolCall.name,
+          data: {
+            toolCallId,
+            toolName: toolCall.name,
+            content: delta.content,
+            offset: delta.offset,
+            stage: delta.stage
+          },
+          message: 'Mock tool progress delta'
+        })
+      )
+    },
     onSkillStart(skillExecution) {
       events.push(
         createEvent({
@@ -190,6 +207,24 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
             input: skillExecution.input
           },
           message: 'Mock skill started'
+        })
+      )
+    },
+    onSkillProgress(skillExecution, delta) {
+      events.push(
+        createEvent({
+          eventType: 'skill_progress_delta',
+          status: 'skill_running',
+          name: skillExecution.skillName,
+          data: {
+            toolCallId,
+            skillRunId: skillExecution.skillRunId,
+            skillName: skillExecution.skillName,
+            content: delta.content,
+            offset: delta.offset,
+            stage: delta.stage
+          },
+          message: 'Mock skill progress delta'
         })
       )
     },

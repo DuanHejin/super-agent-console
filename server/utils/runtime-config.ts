@@ -10,6 +10,7 @@ export function getAppRuntimeConfig() {
     nodeEnv: config.public.nodeEnv,
     databaseUrl: config.databaseUrl,
     demoServerToken: config.demoServerToken,
+    arkApiKey: config.arkApiKey,
     arkBaseUrl: config.arkBaseUrl,
     arkModelId: config.arkModelId,
     logLevel: config.logLevel,

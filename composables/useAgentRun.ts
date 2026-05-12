@@ -11,6 +11,7 @@ export function useAgentRun() {
   const events = ref<AgentEvent[]>([])
   const modelAnalysisTypewriter = useTypewriterQueue()
   const finalAnswerTypewriter = useTypewriterQueue()
+  const { toolProcesses } = useToolSkillProcess(events)
   const modelAnalysis = modelAnalysisTypewriter.output
   const finalAnswer = finalAnswerTypewriter.output
   const error = ref<string>()
@@ -106,6 +107,7 @@ export function useAgentRun() {
     traceId,
     input,
     events,
+    toolProcesses,
     modelAnalysis,
     finalAnswer,
     error,

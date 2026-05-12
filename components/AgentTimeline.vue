@@ -34,7 +34,9 @@ defineProps<{
 
 const detailedEventTypes = new Set<AgentEvent['eventType']>([
   'tool_call_start',
+  'tool_progress_delta',
   'skill_start',
+  'skill_progress_delta',
   'skill_result',
   'tool_call_result'
 ])

@@ -48,3 +48,8 @@
 - 接入 Tool Router、轻量 JSON Schema 校验、workflow input mapping 和 Skill Executor，`analyzeJobAndGeneratePlan` Tool 已按配置编排两个 Skill 并产出实时 AgentEvent。
 - 补充 Agent 配置类型、运行状态、事件协议、Tool/Skill 执行链路等核心类型与方法注释，方便后续复盘和扩展配置后台。
 - 新增 Run 详情查询接口和 `/runs/:runId` 页面，支持从首页跳转查看用户输入、运行状态、AgentEvent、Tool / Skill 过程和最终答案。
+- 新增 Tool / Skill 过程展示面板，将 AgentEvent 中的 Tool 参数、Skill 输入输出和 Tool 返回转换为可读 UI，避免前端只能等待最终答案。
+
+## 2026-05-12
+
+- 新增 `tool_progress_delta` 和 `skill_progress_delta` 事件，让 Tool 编排层和 Skill handler 的中间态输出也能通过 SSE 实时展示到 Timeline、过程卡片和 Run 详情页。

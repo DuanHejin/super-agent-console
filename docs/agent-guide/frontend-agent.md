@@ -18,6 +18,7 @@
 - `components/AgentConsole.vue`：Agent Console 容器。
 - `composables/useAgentRun.ts`：Run 状态编排。先创建 conversation message / Agent Run，再订阅 run 事件流。
 - `composables/useSseStream.ts`：`GET /api/agent/runs/:runId/events` 的 SSE 读取器。
+- `composables/useToolSkillProcess.ts`：将 Tool / Skill AgentEvent 转成前端过程展示 view model。
 - `pages/runs/[runId].vue`：Run 详情页，用于事后复盘一次 Agent Run。
 
 ## Agent Run 流程
@@ -27,11 +28,12 @@
 3. 服务端返回 `conversationId`、`messageId`、`runId`、`traceId` 和 `status`。
 4. 前端订阅 `GET /api/agent/runs/:runId/events`。
 5. 流式 AgentEvent 更新 Timeline、输出区和运行元信息。
-6. `model_text_delta` 更新模型分析流，`final_answer_delta` 更新最终答案流，Tool / Skill 事件在 Timeline 中展示 `data` 负载。
-7. Mock SSE 速度可配置：优先使用页面 query `?sseIntervalMs=1200`，其次使用浏览器 localStorage key `agent:sseIntervalMs`；取值会限制在 100-5000 ms。
-8. 打字机效果由 `composables/useTypewriterQueue.ts` 处理；SSE chunk 应进入队列，而不是直接赋值给展示文本。
-9. 当 run 处于 `running` 时，在输出区和 Timeline 附近显示轻量 loading，不阻塞整个控制台。
-10. 执行结束后可从运行元信息进入 `/runs/:runId`，查看用户输入、事件列表、Tool / Skill 过程和最终答案。
+6. `model_text_delta` 更新模型分析流，`tool_progress_delta` / `skill_progress_delta` 更新 Tool 和 Skill 中间态输出，`final_answer_delta` 更新最终答案流。
+7. Tool / Skill 事件会转成过程卡片，展示 Tool 参数、Tool 过程输出、Skill 输入、Skill 过程输出、Skill 输出和 Tool 返回。
+8. Mock SSE 速度可配置：优先使用页面 query `?sseIntervalMs=1200`，其次使用浏览器 localStorage key `agent:sseIntervalMs`；取值会限制在 100-5000 ms。
+9. 打字机效果由 `composables/useTypewriterQueue.ts` 处理；SSE chunk 应进入队列，而不是直接赋值给展示文本。
+10. 当 run 处于 `running` 时，在输出区和 Timeline 附近显示轻量 loading，不阻塞整个控制台。
+11. 执行结束后可从运行元信息进入 `/runs/:runId`，查看用户输入、事件列表、Tool / Skill 过程和最终答案。
 
 ## UI 规则
 

@@ -58,4 +58,4 @@
 - 服务端改动必须兼容 Docker、K3S 和 JSON stdout 日志。
 - Agent runtime 事件必须使用统一 `AgentEvent` 协议，包含 `eventId`、`eventType`、`conversationId`、`messageId`、`runId`、`traceId`、`sequence`、`status`、`timestamp` 和 `data`，方便前端 Timeline、日志和未来数据库记录关联。
 - `eventType` 表示“发生了什么”，`status` 表示“当前 Run 处于什么状态”，不要混用。
-- Agent 过程必须整体流式展示，不只推最终答案：模型分析使用 `model_text_delta`，Skill 输入放在 `skill_start.data.input`，Skill 输出放在 `skill_result.data.result`，最终答案分片使用 `final_answer_delta`。
+- Agent 过程必须整体流式展示，不只推最终答案：模型分析使用 `model_text_delta`，Tool 中间态输出使用 `tool_progress_delta`，Skill 中间态输出使用 `skill_progress_delta`，Skill 输入放在 `skill_start.data.input`，Skill 输出放在 `skill_result.data.result`，最终答案分片使用 `final_answer_delta`。

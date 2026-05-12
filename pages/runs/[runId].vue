@@ -40,18 +40,10 @@
         <p v-else>当前 Run 尚未写入最终答案。</p>
       </section>
 
-      <section class="panel">
-        <h2>Tool / Skill 复盘</h2>
-        <ol v-if="toolSkillEvents.length" class="event-list">
-          <li v-for="event in toolSkillEvents" :key="event.eventId">
-            <strong>{{ event.sequence }}. {{ event.eventType }}</strong>
-            <small>{{ event.status }}</small>
-            <em v-if="event.name">{{ event.name }}</em>
-            <pre>{{ formatEventData(event.data) }}</pre>
-          </li>
-        </ol>
-        <p v-else>暂无 Tool / Skill 事件。</p>
-      </section>
+      <ToolCallCard
+        :tools="toolProcesses"
+        :status="timelineStatus"
+      />
 
       <AgentTimeline
         :events="run.events"
@@ -68,17 +60,8 @@ import type { AgentRunDetailResponse } from '../../types/agent-run'
 const route = useRoute()
 const runId = computed(() => String(route.params.runId || ''))
 const { data: run, pending, error } = await useFetch<AgentRunDetailResponse>(() => `/api/agent/runs/${runId.value}`)
-
-const toolSkillEventTypes = new Set<AgentEvent['eventType']>([
-  'tool_call_start',
-  'skill_start',
-  'skill_result',
-  'tool_call_result'
-])
-
-const toolSkillEvents = computed(() => {
-  return run.value?.events.filter((event) => toolSkillEventTypes.has(event.eventType)) ?? []
-})
+const detailEvents = computed<AgentEvent[]>(() => run.value?.events ?? [])
+const { toolProcesses } = useToolSkillProcess(detailEvents)
 
 const timelineStatus = computed(() => {
   if (!run.value) {
@@ -95,10 +78,6 @@ const timelineStatus = computed(() => {
 
   return 'running'
 })
-
-function formatEventData(data: unknown) {
-  return JSON.stringify(data, null, 2)
-}
 </script>
 
 <style scoped>
@@ -182,31 +161,4 @@ pre {
   word-break: break-word;
 }
 
-.event-list {
-  margin: 0;
-  padding-left: 20px;
-  color: #526068;
-}
-
-.event-list li {
-  margin: 10px 0;
-}
-
-strong {
-  color: #172026;
-}
-
-small {
-  display: inline-block;
-  margin-left: 8px;
-  color: #526068;
-  font-size: 12px;
-}
-
-em {
-  display: block;
-  color: #526068;
-  font-size: 13px;
-  font-style: normal;
-}
 </style>

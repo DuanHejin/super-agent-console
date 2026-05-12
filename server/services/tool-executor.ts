@@ -1,6 +1,7 @@
 import type { ToolDefinition } from '../agent-config'
 import { getToolWorkflowByToolName } from '../agent-config/workflows'
 import { createSkillRunId } from '../utils/ids'
+import type { SkillProgressDelta } from './skill-executor'
 import { executeSkill } from './skill-executor'
 import { validateJsonSchema } from './schema-validator'
 import { getToolDefinition } from './tool-registry'
@@ -34,14 +35,28 @@ export interface ToolExecutionResult {
   result: Record<string, unknown>
 }
 
+/** Tool workflow 执行过程中向 Agent Runtime 上报的一段中间态输出。 */
+export interface ToolProgressDelta {
+  /** 展示给前端的增量文本。 */
+  content: string
+  /** 当前增量在该 Tool 过程输出中的起始位置。 */
+  offset: number
+  /** 可选阶段名，用于后续做更细的过程分组。 */
+  stage?: string
+}
+
 /** 执行一次模型请求的 Tool call 所需参数。 */
 export interface ExecuteToolOptions {
   /** 模型返回的 Tool 名称。 */
   name: string
   /** 模型返回的 Tool 参数。 */
   args: Record<string, unknown>
+  /** Tool 编排层产生中间态输出时触发，用于推送 `tool_progress_delta`。 */
+  onToolProgress?: (delta: ToolProgressDelta) => void
   /** 执行 Skill 前给 Agent Runtime 的回调，用于推送 `skill_start`。 */
   onSkillStart?: (execution: Omit<ToolSkillExecution, 'result'>) => void
+  /** Skill 内部产生中间态输出时触发，用于推送 `skill_progress_delta`。 */
+  onSkillProgress?: (execution: Omit<ToolSkillExecution, 'result'>, delta: SkillProgressDelta) => void
   /** Skill 执行后给 Agent Runtime 的回调，用于推送 `skill_result`。 */
   onSkillResult?: (execution: ToolSkillExecution) => void
 }
@@ -72,6 +87,9 @@ export async function executeTool(options: ExecuteToolOptions): Promise<ToolExec
 
   const steps: ToolSkillExecution[] = []
   const stepOutputs: Record<string, unknown> = {}
+  const emitToolProgress = createToolProgressEmitter((delta) => options.onToolProgress?.(delta))
+
+  emitToolProgress(`已命中 Tool：${tool.name}，准备执行 workflow：${workflow.name}。\n`, 'workflow-start')
 
   for (const step of workflow.steps) {
     const input = resolveWorkflowInput({
@@ -88,8 +106,13 @@ export async function executeTool(options: ExecuteToolOptions): Promise<ToolExec
     }
 
     options.onSkillStart?.(skillStartExecution)
+    emitToolProgress(`开始执行 Skill：${step.skillName}。\n`, 'skill-start')
 
-    const skillResult = await executeSkill(step.skillName, input)
+    const skillResult = await executeSkill(step.skillName, input, {
+      onProgress(delta) {
+        options.onSkillProgress?.(skillStartExecution, delta)
+      }
+    })
     const execution = {
       ...skillStartExecution,
       result: skillResult.result
@@ -101,7 +124,10 @@ export async function executeTool(options: ExecuteToolOptions): Promise<ToolExec
     }
     steps.push(execution)
     options.onSkillResult?.(execution)
+    emitToolProgress(`Skill 已完成：${step.skillName}。\n`, 'skill-finished')
   }
+
+  emitToolProgress(`Tool workflow 执行完成，共完成 ${steps.length} 个 Skill。\n`, 'workflow-finished')
 
   return {
     tool,
@@ -117,5 +143,25 @@ export async function executeTool(options: ExecuteToolOptions): Promise<ToolExec
       })),
       output: steps[steps.length - 1]?.result ?? {}
     }
+  }
+}
+
+/** 为单个 Tool 生成自增 offset，保证过程输出可以像文本流一样拼接。 */
+function createToolProgressEmitter(emitProgress: (delta: ToolProgressDelta) => void) {
+  let offset = 0
+
+  return (content: string, stage?: string) => {
+    const currentOffset = offset
+    offset += content.length
+    const delta: ToolProgressDelta = {
+      content,
+      offset: currentOffset
+    }
+
+    if (stage) {
+      delta.stage = stage
+    }
+
+    emitProgress(delta)
   }
 }
