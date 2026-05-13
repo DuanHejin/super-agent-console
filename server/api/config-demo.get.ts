@@ -13,12 +13,13 @@ export default defineEventHandler(() => {
       nodeEnv: config.nodeEnv
     },
     serverOnlyConfig: {
-      arkBaseUrl: config.arkBaseUrl,
-      arkModelId: config.arkModelId,
+      modelProvider: config.modelProvider,
+      modelName: config.modelName,
+      modelBaseUrl: config.modelBaseUrl,
       logLevel: config.logLevel,
       mockModelEnabled: config.mockModelEnabled,
       databaseUrlLoaded: Boolean(config.databaseUrl),
-      arkApiKeyLoaded: Boolean(config.arkApiKey),
+      modelApiKeyLoaded: Boolean(config.modelApiKey),
       demoServerTokenLoaded: Boolean(config.demoServerToken)
     }
   }

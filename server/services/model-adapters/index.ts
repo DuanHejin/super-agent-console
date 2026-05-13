@@ -1,3 +1,3 @@
-export * from './doubao-model-adapter'
 export * from './mock-model-adapter'
 export * from './registry'
+export * from './volcengine-ark-model-adapter'

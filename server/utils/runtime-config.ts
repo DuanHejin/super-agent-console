@@ -9,10 +9,14 @@ export function getAppRuntimeConfig() {
     siteUrl: config.public.siteUrl,
     nodeEnv: config.public.nodeEnv,
     databaseUrl: config.databaseUrl,
+    modelProvider: String(config.modelProvider || 'mock'),
+    modelName: String(config.modelName || ''),
+    modelBaseUrl: String(config.modelBaseUrl || ''),
+    modelApiKey: typeof config.modelApiKey === 'string' ? config.modelApiKey : undefined,
+    modelTemperature: Number(config.modelTemperature || 0.2),
+    modelTopP: Number(config.modelTopP || 0.8),
+    modelMaxTokens: Number(config.modelMaxTokens || 4096),
     demoServerToken: config.demoServerToken,
-    arkApiKey: config.arkApiKey,
-    arkBaseUrl: config.arkBaseUrl,
-    arkModelId: config.arkModelId,
     logLevel: config.logLevel,
     mockModelEnabled: config.mockModelEnabled
   }

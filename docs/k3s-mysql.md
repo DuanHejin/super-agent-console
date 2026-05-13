@@ -358,7 +358,7 @@ DATABASE_URL=mysql://sac_app:<MYSQL_APP_PASSWORD>@mysql:3306/super_agent_console
 kubectl create secret generic super-agent-console-secret \
   -n default \
   --from-literal=DATABASE_URL='mysql://sac_app:<MYSQL_APP_PASSWORD>@mysql:3306/super_agent_console_prod' \
-  --from-literal=ARK_API_KEY='<ARK_API_KEY>' \
+  --from-literal=MODEL_API_KEY='<MODEL_API_KEY>' \
   --from-literal=DEMO_SERVER_TOKEN='<DEMO_SERVER_TOKEN>' \
   --dry-run=client -o yaml | kubectl apply -f -
 ```

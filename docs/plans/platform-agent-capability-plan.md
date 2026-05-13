@@ -26,7 +26,8 @@
 - [ ] 后台支持维护 Workflow 编排、版本、启停和灰度规则。
 - [ ] 设计可视化 Workflow 数据结构。
 - [ ] 实现代码化 workflow 与可视化 workflow 的互相转换边界。
-- [ ] 支持多模型 Adapter：DoubaoAdapter。
+- [ ] 支持火山方舟平台 Adapter：VolcengineArkAdapter。
+- [ ] 支持在同一平台内切换具体模型，例如 Seed 2.0 Lite、Seed 2.0 Pro、DeepSeek。
 - [ ] 支持多模型 Adapter：DeepSeekAdapter。
 - [ ] 支持多模型 Adapter：QwenAdapter。
 - [ ] 支持 OpenAICompatibleAdapter。

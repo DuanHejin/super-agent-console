@@ -1,5 +1,6 @@
 import type { AgentEvent } from '../../../../../types/agent-event'
-import { createMockAgentRun } from '../../../../services/agent-runtime'
+import type { AgentRunStatus } from '../../../../../types/agent-run'
+import { createMockAgentRun, createRealAgentRunStream } from '../../../../services/agent-runtime'
 import {
   completePersistedMessageRun,
   persistAgentEvent,
@@ -12,6 +13,7 @@ import {
   updateRunStatus
 } from '../../../../services/run-store'
 import { logAgentEvent, logger } from '../../../../utils/logger'
+import { getAppRuntimeConfig } from '../../../../utils/runtime-config'
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -37,6 +39,7 @@ export default defineEventHandler(async (event) => {
   const runId = getRouterParam(event, 'runId')
   const query = getQuery(event)
   const intervalMs = resolveIntervalMs(query.intervalMs)
+  const runtimeConfig = getAppRuntimeConfig()
 
   if (!runId) {
     throw createError({
@@ -75,26 +78,11 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const result = await createMockAgentRun({
-    input: run.input,
-    conversationId: run.conversationId,
-    messageId: run.messageId,
-    runId: run.runId,
-    traceId: run.traceId
-  })
+  const emittedEvents: AgentEvent[] = []
+  let finalAnswer = ''
 
-  logger.info({
-    eventType: 'agent_run_event_stream_started',
-    conversationId: run.conversationId,
-    messageId: run.messageId,
-    runId: run.runId,
-    traceId: run.traceId,
-    eventCount: result.events.length,
-    intervalMs,
-    message: 'Agent Run event stream started'
-  })
-
-  for (const agentEvent of result.events) {
+  const handleAgentEvent = async (agentEvent: AgentEvent) => {
+    emittedEvents.push(agentEvent)
     updateRunStatus(runId, agentEvent.status)
     appendRunEvent(runId, agentEvent)
     try {
@@ -113,20 +101,96 @@ export default defineEventHandler(async (event) => {
     }
     logAgentEvent(agentEvent)
     writeSseEvent(res, agentEvent)
-    await wait(intervalMs)
   }
 
-  completeMessageRun(runId, result.events, result.finalAnswer)
-  try {
-    await completePersistedMessageRun(runId, result.finalAnswer)
-  } catch (persistenceError) {
-    logger.warn({
-      eventType: 'agent_run_complete_persist_failed',
-      runId,
+  if (runtimeConfig.modelProvider === 'volcengine_ark') {
+    const realStream = createRealAgentRunStream({
+      input: run.input,
+      conversationId: run.conversationId,
+      messageId: run.messageId,
+      runId: run.runId,
       traceId: run.traceId,
-      errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
-      message: 'Agent Run completion persisted failed, fallback to memory run-store'
+      modelProvider: 'volcengine_ark',
+      modelName: runtimeConfig.modelName,
+      modelBaseUrl: runtimeConfig.modelBaseUrl,
+      modelApiKey: runtimeConfig.modelApiKey,
+      temperature: runtimeConfig.modelTemperature,
+      topP: runtimeConfig.modelTopP,
+      maxTokens: runtimeConfig.modelMaxTokens
     })
+
+    logger.info({
+      eventType: 'agent_run_event_stream_started',
+      conversationId: run.conversationId,
+      messageId: run.messageId,
+      runId: run.runId,
+      traceId: run.traceId,
+      provider: realStream.provider,
+      model: realStream.modelName,
+      message: 'Real Agent Run event stream started'
+    })
+
+    for await (const agentEvent of realStream.events) {
+      await handleAgentEvent(agentEvent)
+    }
+
+    finalAnswer = realStream.getFinalAnswer()
+  } else {
+    const result = await createMockAgentRun({
+      input: run.input,
+      conversationId: run.conversationId,
+      messageId: run.messageId,
+      runId: run.runId,
+      traceId: run.traceId
+    })
+
+    logger.info({
+      eventType: 'agent_run_event_stream_started',
+      conversationId: run.conversationId,
+      messageId: run.messageId,
+      runId: run.runId,
+      traceId: run.traceId,
+      eventCount: result.events.length,
+      intervalMs,
+      message: 'Mock Agent Run event stream started'
+    })
+
+    for (const agentEvent of result.events) {
+      await handleAgentEvent(agentEvent)
+      await wait(intervalMs)
+    }
+
+    finalAnswer = result.finalAnswer
+  }
+
+  const finalStatus: AgentRunStatus = emittedEvents.at(-1)?.status ?? 'running'
+
+  if (finalStatus === 'completed') {
+    completeMessageRun(runId, emittedEvents, finalAnswer)
+    try {
+      await completePersistedMessageRun(runId, finalAnswer)
+    } catch (persistenceError) {
+      logger.warn({
+        eventType: 'agent_run_complete_persist_failed',
+        runId,
+        traceId: run.traceId,
+        errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+        message: 'Agent Run completion persisted failed, fallback to memory run-store'
+      })
+    }
+  } else {
+    updateRunStatus(runId, finalStatus)
+    try {
+      await updatePersistedRunStatus(runId, finalStatus)
+    } catch (persistenceError) {
+      logger.warn({
+        eventType: 'agent_run_status_persist_failed',
+        runId,
+        traceId: run.traceId,
+        errorMessage: persistenceError instanceof Error ? persistenceError.message : 'Unknown persistence error',
+        message: 'Agent Run final status persisted failed, fallback to memory run-store'
+      })
+    }
   }
 
   res.write('event: done\n')
@@ -139,7 +203,8 @@ export default defineEventHandler(async (event) => {
     messageId: run.messageId,
     runId: run.runId,
     traceId: run.traceId,
-    eventCount: result.events.length,
+    eventCount: emittedEvents.length,
+    status: finalStatus,
     message: 'Agent Run event stream completed'
   })
 })

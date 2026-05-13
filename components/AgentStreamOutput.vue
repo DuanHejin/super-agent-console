@@ -1,7 +1,7 @@
 <template>
   <section class="panel">
     <h2>AI Output</h2>
-    <p v-if="status === 'running' && !analysisContent && !content">Mock Agent 正在建立 SSE 连接。</p>
+    <p v-if="status === 'running' && !analysisContent && !content">Agent 正在建立 SSE 连接。</p>
     <p v-else-if="error" class="error">{{ error }}</p>
     <div v-else-if="analysisContent || content">
       <div v-if="status === 'running'" class="loading-line">

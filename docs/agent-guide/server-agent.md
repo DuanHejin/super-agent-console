@@ -31,6 +31,8 @@
 - `npm run dev` 已通过 `nuxt dev --dotenv .env.local` 显式加载本地环境变量；如果缺少 `DATABASE_URL`，Prisma 落库会失败并回退到内存 run-store。
 - 生产配置优先通过 K3S ConfigMap / Secret 注入。
 - 线上数据库连接 K3S 内部 MySQL Service：`mysql:3306`。
+- 真实模型接入优先使用通用 `MODEL_*` 变量：`MODEL_PROVIDER`、`MODEL_NAME`、`MODEL_BASE_URL`、`MODEL_API_KEY`、`MODEL_TEMPERATURE`、`MODEL_TOP_P`、`MODEL_MAX_TOKENS`。
+- 本地接入火山方舟 Seed 2.0 Lite 时，将 `MODEL_PROVIDER` 设置为 `volcengine_ark`，`MODEL_NAME` 设置为方舟 curl 示例中 `model` 字段的值，例如 `doubao-seed-2-0-lite-260428`。
 - 不要打印 API key、数据库密码或完整敏感环境变量值。
 - `.env.example` 作为本地开发模板和 K3S 配置映射参考，`DATABASE_URL` 示例默认指向本机 MySQL dev 库。
 
@@ -43,10 +45,18 @@
 - `server/agent-config/workflows.ts` 定义 Tool 到 Skill 的编排关系和 `inputMapping`；新增 workflow 应优先加在这里，不要把步骤顺序硬编码进 runtime。
 - `server/agent-config/models.ts` 定义可选模型供应商和默认生成参数。
 - `server/services/model-adapters/` 是模型集成边界。新增或切换 LLM 供应商时，实现 `ModelAdapter`，不要让 Agent Runtime 直接依赖某个供应商 SDK。
+- `server/services/model-adapters/volcengine-ark-model-adapter.ts` 是火山方舟平台适配器，当前支持 Seed 2.0 Lite 基础文本流式输出；真实 tool call 后续继续在该边界内扩展。
 - `server/services/schema-validator.ts` 提供 MVP 阶段的 JSON Schema 校验器，用于 Tool 参数和 Skill 输入/输出。
 - `server/services/tool-executor.ts` 校验 Tool 白名单和参数，解析 workflow input mapping，并编排 Skill 执行。
 - `server/services/skill-executor.ts` 将 Skill `handlerName` 映射到具体执行函数，并校验 Skill 输入/输出 schema。
 - `server/services/workflow-input-mapping.ts` 解析代码配置中的映射表达式，例如 `$toolArgs.jdText` 和 `$steps.extract-requirements.output`。
+
+## 模型平台与模型选择
+
+- 大模型接入需要区分“模型服务平台”和“具体模型”：火山方舟是 MaaS 平台，豆包 Seed、DeepSeek、通义千问、智谱 GLM 等是具体模型或模型家族。
+- 当前项目真实模型接入优先使用火山方舟平台，默认评估豆包 Seed 2.0 Lite；如果 tool call、JSON 输出或复杂推理质量不足，再切换 Seed 2.0 Pro 对比。
+- Model Adapter 应按平台协议设计，例如 `VolcengineArkAdapter`、`OpenAICompatibleAdapter`、`MockAdapter`；具体模型通过 `MODEL_NAME` 切换。
+- 模型平台、模型选择和 Seed 2.0 对比详见 `docs/agent-guide/model-platform-knowledge.md`。
 
 ## MVP Run Store 与持久化
 

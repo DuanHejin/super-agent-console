@@ -1,6 +1,6 @@
 import type { ModelAdapter, ModelDefinition, ModelProvider } from '../../agent-config'
-import { createDoubaoModelAdapter } from './doubao-model-adapter'
 import { createMockModelAdapter } from './mock-model-adapter'
+import { createVolcengineArkModelAdapter } from './volcengine-ark-model-adapter'
 
 /** 创建模型适配器所需的运行时参数。 */
 export interface CreateModelAdapterOptions {
@@ -19,8 +19,8 @@ export function createModelAdapter(options: CreateModelAdapterOptions): ModelAda
     return createMockModelAdapter()
   }
 
-  if (options.provider === 'doubao') {
-    return createDoubaoModelAdapter({
+  if (options.provider === 'volcengine_ark') {
+    return createVolcengineArkModelAdapter({
       apiKey: options.apiKey,
       baseUrl: options.baseUrl,
       modelId: options.modelId

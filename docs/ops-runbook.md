@@ -122,7 +122,7 @@ Create/update real Secret on the server:
 kubectl create secret generic super-agent-console-secret \
   -n default \
   --from-literal=DATABASE_URL='replace-with-real-value' \
-  --from-literal=ARK_API_KEY='replace-with-real-value' \
+  --from-literal=MODEL_API_KEY='replace-with-real-value' \
   --from-literal=DEMO_SERVER_TOKEN='replace-with-real-value' \
   --dry-run=client -o yaml | kubectl apply -f -
 ```

@@ -82,7 +82,7 @@ export interface ToolWorkflowDefinition {
 }
 
 /** 当前模型适配器接口支持的模型供应商。 */
-export type ModelProvider = 'mock' | 'doubao' | 'openai-compatible'
+export type ModelProvider = 'mock' | 'volcengine_ark' | 'openai-compatible'
 
 /** 可选择的大模型供应商/模型配置。 */
 export interface ModelDefinition {

@@ -96,13 +96,20 @@ Prisma ORM
 
 ### 3.3 AI 模型
 
-第一版支持火山方舟 / 豆包模型。
+第一版优先通过火山方舟平台接入真实模型，默认评估豆包 Seed 2.0 Lite。
+
+这里需要区分“模型服务平台”和“具体模型”：
+
+```txt
+火山方舟：模型服务平台 / MaaS
+豆包 Seed 2.0 Lite：具体模型
+```
 
 要求：
 
-- 模型调用逻辑封装到 server/services/doubao-client.ts
+- 模型调用逻辑通过 Model Adapter 封装，Agent Runtime 不直接依赖某一个模型厂商 SDK
 - API Key 从环境变量读取
-- 模型 ID 从环境变量读取
+- 模型平台、模型 ID 和生成参数从环境变量读取
 - 先支持普通文本生成
 - 再支持流式输出
 - 如果真实模型暂时不可用，需要保留 mock 模式，保证 Demo 可运行
@@ -149,8 +156,8 @@ JSON stdout logs
 
 - 应用仍保留 `.env.example` 作为本地开发和变量说明模板。
 - 本地开发可以从 `.env` 读取配置。
-- 生产环境通过 K3S ConfigMap 管理普通配置，例如 `APP_NAME`、`APP_VERSION`、`ARK_BASE_URL`、`ARK_MODEL_ID`、`LOG_LEVEL`、`MOCK_MODEL_ENABLED`。
-- 生产环境通过 K3S Secret 管理敏感配置，例如 `DATABASE_URL`、`ARK_API_KEY`。
+- 生产环境通过 K3S ConfigMap 管理普通配置，例如 `APP_NAME`、`APP_VERSION`、`MODEL_PROVIDER`、`MODEL_NAME`、`MODEL_BASE_URL`、`MODEL_TEMPERATURE`、`MODEL_TOP_P`、`MODEL_MAX_TOKENS`、`LOG_LEVEL`、`MOCK_MODEL_ENABLED`。
+- 生产环境通过 K3S Secret 管理敏感配置，例如 `DATABASE_URL`、`MODEL_API_KEY`。
 - 敏感配置仍需要按实际部署方式安全注入，不允许写死在代码、镜像或 Git 仓库中。
 - Nacos 不作为当前 MVP 必选项；如后续确实需要配置中心，可在 K3S 中自建 Nacos 或接入外部 Nacos。
 - README 需要说明本地 `.env` 与 K3S ConfigMap / Secret 之间的对应关系。
@@ -342,7 +349,7 @@ super-agent-console/
 │   └── services/
 │       ├── agent-runtime.ts
 │       ├── agent-events.ts
-│       ├── doubao-client.ts
+│       ├── volcengine-ark-client.ts
 │       ├── tool-registry.ts
 │       ├── tool-executor.ts
 │       └── prompt-builder.ts
@@ -950,9 +957,13 @@ APP_VERSION=0.1.0
 
 DATABASE_URL=mysql://root:password@mysql:3306/super_agent_console
 
-ARK_API_KEY=your_ark_api_key
-ARK_MODEL_ID=your_model_id
-ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+MODEL_PROVIDER=mock
+MODEL_NAME=doubao-seed-2-0-lite-260428
+MODEL_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+MODEL_API_KEY=your_model_api_key
+MODEL_TEMPERATURE=0.2
+MODEL_TOP_P=0.8
+MODEL_MAX_TOKENS=4096
 
 LOG_LEVEL=info
 MOCK_MODEL_ENABLED=true
@@ -1051,8 +1062,12 @@ k8s/
 NODE_ENV
 APP_NAME
 APP_VERSION
-ARK_BASE_URL
-ARK_MODEL_ID
+MODEL_PROVIDER
+MODEL_NAME
+MODEL_BASE_URL
+MODEL_TEMPERATURE
+MODEL_TOP_P
+MODEL_MAX_TOKENS
 LOG_LEVEL
 MOCK_MODEL_ENABLED
 ```
@@ -1065,7 +1080,7 @@ MOCK_MODEL_ENABLED
 
 ```txt
 DATABASE_URL
-ARK_API_KEY
+MODEL_API_KEY
 ```
 
 不要写真实值。
@@ -1240,7 +1255,7 @@ docker compose up -d --build 成功
 
 ### Step 7：真实模型调用
 
-- doubao-client
+- volcengine-ark-client
 - /api/agent/run
 - final_answer_delta 流式输出
 - 模型失败时 fallback 到 mock

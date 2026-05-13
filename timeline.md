@@ -61,3 +61,10 @@
 - 更新 `.env.example` 的 `DATABASE_URL` 示例，默认指向本机 MySQL dev 库和应用账号。
 - 新增 Prisma 持久化服务，将 mock Agent Run 的 Conversation、Message、AgentRun、IdempotencyRecord、AgentEvent、ToolCall 和 SkillRun 写入 MySQL，并让 Run 详情接口优先读取数据库。
 - 调整本地 dev 脚本为 `nuxt dev --dotenv .env.local`，确保 Prisma runtime 能读取本机 MySQL 的 `DATABASE_URL`。
+
+## 2026-05-13
+
+- 新增大模型平台与模型选择知识库，明确区分火山方舟等 MaaS 平台、豆包 Seed / DeepSeek / 通义千问等具体模型，以及项目内 Model Adapter 的职责边界。
+- 调整真实模型接入计划描述：第一版优先通过火山方舟平台接入豆包 Seed 2.0 Lite，并保留 Seed 2.0 Pro 作为复杂推理和 tool call 稳定性对比模型。
+- 新增火山方舟平台 Adapter 和通用 `MODEL_*` 配置，支持通过 `MODEL_PROVIDER=volcengine_ark`、`MODEL_NAME=doubao-seed-2-0-lite-260428` 接入 Seed 2.0 Lite 基础文本流式输出。
+- 清理旧 `ARK_*` runtime 字段和旧 `doubao` adapter 骨架，统一使用 `MODEL_*` 配置表达模型平台、具体模型和鉴权信息。

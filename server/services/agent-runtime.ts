@@ -10,6 +10,7 @@ import {
   createTraceId
 } from '../utils/ids'
 import { createMockModelAdapter } from './model-adapters'
+import { createModelAdapter } from './model-adapters/registry'
 import { executeTool } from './tool-executor'
 
 export interface MockAgentRunResult {
@@ -25,6 +26,23 @@ interface RunMockAgentOptions {
   messageId?: string
   runId?: string
   traceId?: string
+}
+
+export interface RunRealAgentOptions extends RunMockAgentOptions {
+  modelProvider: 'volcengine_ark'
+  modelName: string
+  modelBaseUrl: string
+  modelApiKey?: string
+  temperature: number
+  topP: number
+  maxTokens: number
+}
+
+export interface AgentRunEventStream {
+  provider: string
+  modelName: string
+  events: AsyncIterable<AgentEvent>
+  getFinalAnswer(): string
 }
 
 export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
@@ -299,6 +317,144 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
   }
 }
 
-export async function runRealAgent() {
-  throw new Error('runRealAgent is not implemented yet')
+/** 创建真实模型 Agent 事件流。第一版只接入模型文本流，Tool Calling 后续再接。 */
+export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRunEventStream {
+  const conversationId = options.conversationId ?? createConversationId()
+  const messageId = options.messageId ?? createMessageId()
+  const runId = options.runId ?? createRunId()
+  const traceId = options.traceId ?? createTraceId()
+  const timestamp = () => new Date().toISOString()
+  let sequence = 0
+  let finalAnswer = ''
+  let finalAnswerOffset = 0
+  const normalizedInput = options.input.trim()
+  const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
+  const model = createModelAdapter({
+    provider: options.modelProvider,
+    apiKey: options.modelApiKey,
+    baseUrl: options.modelBaseUrl,
+    modelId: options.modelName
+  })
+
+  /** 为当前 run 创建一条带统一信封字段的 AgentEvent。 */
+  const createEvent = <TData extends Record<string, unknown>>(event: {
+    eventType: AgentEvent['eventType']
+    status: AgentRunStatus
+    name?: string
+    data: TData
+    message?: string
+  }): AgentEvent<TData> => {
+    sequence += 1
+
+    return {
+      eventId: createEventId(),
+      eventType: event.eventType,
+      conversationId,
+      messageId,
+      runId,
+      traceId,
+      sequence,
+      status: event.status,
+      timestamp: timestamp(),
+      name: event.name,
+      data: event.data,
+      message: event.message
+    }
+  }
+
+  async function* events(): AsyncIterable<AgentEvent> {
+    try {
+      yield createEvent({
+        eventType: 'agent_start',
+        status: 'running',
+        data: {
+          inputPreview
+        },
+        message: 'Real Agent Run started'
+      })
+
+      yield createEvent({
+        eventType: 'prompt_loaded',
+        status: 'model_calling',
+        name: 'real-agent-default',
+        data: {
+          promptName: 'real-agent-default'
+        },
+        message: 'Real prompt loaded'
+      })
+
+      yield createEvent({
+        eventType: 'model_call_start',
+        status: 'model_calling',
+        name: options.modelName,
+        data: {
+          provider: options.modelProvider,
+          model: options.modelName
+        },
+        message: 'Real model stream started'
+      })
+
+      for await (const streamEvent of model.stream({
+        messages: [
+          {
+            role: 'system',
+            content: '你是 Super Agent Console 的演示智能体。请用中文回答，输出要清晰、具体、适合前端流式展示。'
+          },
+          {
+            role: 'user',
+            content: normalizedInput
+          }
+        ],
+        temperature: options.temperature,
+        topP: options.topP,
+        maxTokens: options.maxTokens
+      })) {
+        if (streamEvent.type === 'text_delta' && streamEvent.content) {
+          const currentOffset = finalAnswerOffset
+          finalAnswer += streamEvent.content
+          finalAnswerOffset += streamEvent.content.length
+
+          yield createEvent({
+            eventType: 'final_answer_delta',
+            status: 'generating',
+            name: options.modelName,
+            data: {
+              content: streamEvent.content,
+              offset: currentOffset
+            },
+            message: 'Real model final answer delta'
+          })
+        }
+      }
+
+      yield createEvent({
+        eventType: 'agent_done',
+        status: 'completed',
+        data: {
+          resultId: `result_${runId}`,
+          provider: options.modelProvider,
+          model: options.modelName
+        },
+        message: 'Real Agent Run finished'
+      })
+    } catch (error) {
+      yield createEvent({
+        eventType: 'agent_error',
+        status: 'failed',
+        data: {
+          errorMessage: error instanceof Error ? error.message : 'Real Agent Run failed'
+        },
+        message: 'Real Agent Run failed'
+      })
+    }
+  }
+
+  return {
+    provider: options.modelProvider,
+    modelName: options.modelName,
+    events: events(),
+    getFinalAnswer() {
+      return finalAnswer
+    }
+  }
 }

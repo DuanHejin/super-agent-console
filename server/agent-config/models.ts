@@ -15,18 +15,18 @@ export const modelDefinitions = [
     }
   },
   {
-    provider: 'doubao',
-    displayName: 'Doubao / Volcano Ark',
-    modelId: 'doubao-seed-placeholder',
+    provider: 'volcengine_ark',
+    displayName: 'Volcengine Ark / Doubao Seed',
+    modelId: 'doubao-seed-2-0-lite-260428',
     enabled: false,
     defaultOptions: {
-      temperature: 0.3,
+      temperature: 0.2,
       topP: 0.8,
       maxTokens: 4096
     },
     runtimeEnvKeys: {
-      apiKey: 'ARK_API_KEY',
-      baseUrl: 'ARK_BASE_URL'
+      apiKey: 'MODEL_API_KEY',
+      baseUrl: 'MODEL_BASE_URL'
     }
   },
   {
