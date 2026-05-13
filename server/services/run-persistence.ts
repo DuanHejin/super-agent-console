@@ -1,6 +1,11 @@
 import type { Prisma } from '@prisma/client'
 import type { AgentEvent } from '../../types/agent-event'
-import type { AgentRunDetailResponse, AgentRunStatus } from '../../types/agent-run'
+import type {
+  AgentRunDetailResponse,
+  AgentRunListItem,
+  AgentRunStatus,
+  ConversationListItem
+} from '../../types/agent-run'
 import type { AgentRunRecord } from './run-store'
 import { prisma } from '../utils/prisma'
 
@@ -309,4 +314,66 @@ export async function getPersistedRunDetail(runId: string): Promise<AgentRunDeta
     createdAt: run.createdAt.toISOString(),
     updatedAt: run.updatedAt.toISOString()
   }
+}
+
+/** 从数据库读取最近的 Conversation 摘要列表。 */
+export async function listPersistedConversations(limit = 50): Promise<ConversationListItem[]> {
+  const conversations = await prisma.conversation.findMany({
+    take: limit,
+    orderBy: {
+      updatedAt: 'desc'
+    },
+    include: {
+      _count: {
+        select: {
+          messages: true,
+          runs: true
+        }
+      },
+      runs: {
+        take: 1,
+        orderBy: {
+          updatedAt: 'desc'
+        },
+        select: {
+          id: true,
+          status: true
+        }
+      }
+    }
+  })
+
+  return conversations.map((conversation) => ({
+    conversationId: conversation.id,
+    title: conversation.title ?? undefined,
+    messageCount: conversation._count.messages,
+    runCount: conversation._count.runs,
+    latestRunId: conversation.runs[0]?.id,
+    latestRunStatus: conversation.runs[0]?.status,
+    createdAt: conversation.createdAt.toISOString(),
+    updatedAt: conversation.updatedAt.toISOString()
+  }))
+}
+
+/** 从数据库读取最近的 Agent Run 摘要列表。 */
+export async function listPersistedRuns(limit = 50): Promise<AgentRunListItem[]> {
+  const runs = await prisma.agentRun.findMany({
+    take: limit,
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  return runs.map((run) => ({
+    conversationId: run.conversationId,
+    messageId: run.messageId,
+    runId: run.id,
+    traceId: run.traceId,
+    status: run.status,
+    inputPreview: run.input.slice(0, 120),
+    finalAnswerPreview: run.finalAnswer?.slice(0, 120) ?? undefined,
+    createdAt: run.createdAt.toISOString(),
+    updatedAt: run.updatedAt.toISOString(),
+    completedAt: run.completedAt?.toISOString()
+  }))
 }

@@ -15,6 +15,8 @@
 
 - `pages/index.vue`：首页外壳。
 - `pages/deploy.vue`：部署信息页面。
+- `pages/conversations/index.vue`：Conversation 列表页，展示会话摘要和最新 Run 入口。
+- `pages/runs/index.vue`：Run 列表页，展示最近 Agent Run 并支持进入详情页。
 - `components/AgentConsole.vue`：Agent Console 容器。
 - `composables/useAgentRun.ts`：Run 状态编排。先创建 conversation message / Agent Run，再订阅 run 事件流。
 - `composables/useSseStream.ts`：`GET /api/agent/runs/:runId/events` 的 SSE 读取器。
@@ -47,3 +49,5 @@
 - 先阅读 `super_agent_console_codex_requirement.md`。
 - 完成有意义的项目改动后，检查并更新 `timeline.md`。
 - 前端改动必须和 `types/agent-event.ts` 中的 AgentEvent 协议保持一致。
+- 展示服务端 ISO 时间时，统一转换为浏览器本地时间，不直接显示 UTC ISO 字符串。
+- 模型最终回答使用 `MarkdownContent` 展示轻量 Markdown 语法，避免只按纯文本展示。

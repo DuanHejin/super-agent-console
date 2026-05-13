@@ -68,3 +68,5 @@
 - 调整真实模型接入计划描述：第一版优先通过火山方舟平台接入豆包 Seed 2.0 Lite，并保留 Seed 2.0 Pro 作为复杂推理和 tool call 稳定性对比模型。
 - 新增火山方舟平台 Adapter 和通用 `MODEL_*` 配置，支持通过 `MODEL_PROVIDER=volcengine_ark`、`MODEL_NAME=doubao-seed-2-0-lite-260428` 接入 Seed 2.0 Lite 基础文本流式输出。
 - 清理旧 `ARK_*` runtime 字段和旧 `doubao` adapter 骨架，统一使用 `MODEL_*` 配置表达模型平台、具体模型和鉴权信息。
+- 接入真实模型 tool call 闭环：火山方舟请求携带 Tool Schema，流式解析模型返回的 tool call，服务端执行 Tool Router / Skill workflow，并将 Tool Result 回填给模型生成最终答案。
+- 优化 Agent Console 和复盘体验：将 Run 详情入口上移，新增 Conversation / Run 列表页，统一本地时间展示，并支持模型最终回答的轻量 Markdown 渲染。

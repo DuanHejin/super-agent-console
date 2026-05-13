@@ -45,3 +45,29 @@ export interface AgentRunDetailResponse {
   createdAt: string
   updatedAt: string
 }
+
+/** Conversation 列表页展示的一条会话摘要。 */
+export interface ConversationListItem {
+  conversationId: string
+  title?: string
+  messageCount: number
+  runCount: number
+  latestRunId?: string
+  latestRunStatus?: AgentRunStatus
+  createdAt: string
+  updatedAt: string
+}
+
+/** Run 列表页展示的一条运行摘要。 */
+export interface AgentRunListItem {
+  conversationId: string
+  messageId: string
+  runId: string
+  traceId: string
+  status: AgentRunStatus
+  inputPreview: string
+  finalAnswerPreview?: string
+  createdAt: string
+  updatedAt: string
+  completedAt?: string
+}

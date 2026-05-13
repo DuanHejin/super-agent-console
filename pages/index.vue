@@ -6,6 +6,10 @@
       <p class="intro">
         当前阶段先完成 Nuxt 3 项目骨架、服务端健康检查和 Agent 模块边界，后续逐步接入 SSE、数据库、日志与部署链路。
       </p>
+      <nav class="quick-links">
+        <NuxtLink to="/runs">Run 列表</NuxtLink>
+        <NuxtLink to="/conversations">Conversation 列表</NuxtLink>
+      </nav>
     </section>
 
     <AgentConsole />
@@ -83,6 +87,19 @@ h1 {
   color: #526068;
   font-size: 17px;
   line-height: 1.7;
+}
+
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.quick-links a {
+  color: #2563eb;
+  font-size: 14px;
+  text-decoration: none;
 }
 
 .grid {

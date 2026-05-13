@@ -1,5 +1,7 @@
 import type {
   AgentRunStatus,
+  AgentRunListItem,
+  ConversationListItem,
   AgentRunDetailResponse,
   CreateConversationMessageRequest,
   CreateConversationMessageResponse
@@ -158,4 +160,58 @@ export function completeMessageRun(runId: string, events: AgentEvent[], finalAns
   run.updatedAt = new Date().toISOString()
 
   return run
+}
+
+/** 内存 fallback：列出最近的 Agent Run。 */
+export function listMessageRuns(limit = 50): AgentRunListItem[] {
+  return Array.from(runs.values())
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, limit)
+    .map((run) => ({
+      conversationId: run.conversationId,
+      messageId: run.messageId,
+      runId: run.runId,
+      traceId: run.traceId,
+      status: run.status,
+      inputPreview: run.input.slice(0, 120),
+      finalAnswerPreview: run.finalAnswer?.slice(0, 120),
+      createdAt: run.createdAt,
+      updatedAt: run.updatedAt
+    }))
+}
+
+/** 内存 fallback：按 conversationId 聚合会话摘要。 */
+export function listConversations(limit = 50): ConversationListItem[] {
+  const conversations = new Map<string, ConversationListItem>()
+
+  for (const run of runs.values()) {
+    const existing = conversations.get(run.conversationId)
+
+    if (!existing) {
+      conversations.set(run.conversationId, {
+        conversationId: run.conversationId,
+        title: run.input.slice(0, 80) || '新会话',
+        messageCount: 1,
+        runCount: 1,
+        latestRunId: run.runId,
+        latestRunStatus: run.status,
+        createdAt: run.createdAt,
+        updatedAt: run.updatedAt
+      })
+      continue
+    }
+
+    existing.messageCount += 1
+    existing.runCount += 1
+
+    if (run.updatedAt > existing.updatedAt) {
+      existing.latestRunId = run.runId
+      existing.latestRunStatus = run.status
+      existing.updatedAt = run.updatedAt
+    }
+  }
+
+  return Array.from(conversations.values())
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+    .slice(0, limit)
 }

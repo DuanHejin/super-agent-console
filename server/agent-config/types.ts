@@ -116,6 +116,8 @@ export interface ModelMessage {
   content: string
   /** Tool 结果消息可通过该字段关联它回答的是哪次 tool call。 */
   toolCallId?: string
+  /** Assistant 消息如果触发了工具调用，需要把 tool calls 回填给后续模型请求。 */
+  toolCalls?: ModelToolCall[]
 }
 
 /** 模型适配器返回的标准 tool call 结构。 */

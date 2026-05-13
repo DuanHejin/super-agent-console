@@ -1,6 +1,10 @@
 <template>
   <main class="run-page">
-    <NuxtLink class="back-link" to="/">返回控制台</NuxtLink>
+    <nav class="page-nav">
+      <NuxtLink to="/">返回控制台</NuxtLink>
+      <NuxtLink to="/runs">Run 列表</NuxtLink>
+      <NuxtLink to="/conversations">Conversation 列表</NuxtLink>
+    </nav>
 
     <section class="panel">
       <h1>Run 详情</h1>
@@ -24,6 +28,14 @@
             <dt>events</dt>
             <dd>{{ run.events.length }}</dd>
           </div>
+          <div>
+            <dt>createdAt</dt>
+            <dd>{{ formatLocalDateTime(run.createdAt) }}</dd>
+          </div>
+          <div>
+            <dt>updatedAt</dt>
+            <dd>{{ formatLocalDateTime(run.updatedAt) }}</dd>
+          </div>
         </dl>
       </template>
     </section>
@@ -36,7 +48,7 @@
 
       <section class="panel">
         <h2>最终答案</h2>
-        <pre v-if="run.finalAnswer">{{ run.finalAnswer }}</pre>
+        <MarkdownContent v-if="run.finalAnswer" :content="run.finalAnswer" />
         <p v-else>当前 Run 尚未写入最终答案。</p>
       </section>
 
@@ -62,6 +74,7 @@ const runId = computed(() => String(route.params.runId || ''))
 const { data: run, pending, error } = await useFetch<AgentRunDetailResponse>(() => `/api/agent/runs/${runId.value}`)
 const detailEvents = computed<AgentEvent[]>(() => run.value?.events ?? [])
 const { toolProcesses } = useToolSkillProcess(detailEvents)
+const { formatLocalDateTime } = useLocalDateTime()
 
 const timelineStatus = computed(() => {
   if (!run.value) {
@@ -89,7 +102,13 @@ const timelineStatus = computed(() => {
   padding: 32px 20px 48px;
 }
 
-.back-link {
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-nav a {
   width: fit-content;
   color: #2563eb;
   font-size: 14px;

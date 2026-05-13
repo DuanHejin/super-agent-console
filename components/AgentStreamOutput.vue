@@ -14,7 +14,7 @@
       </section>
       <section v-if="content" class="stream-block">
         <h3>Final Answer</h3>
-        <pre>{{ content }}</pre>
+        <MarkdownContent :content="content" />
       </section>
     </div>
     <p v-else>等待 Agent 输出。</p>

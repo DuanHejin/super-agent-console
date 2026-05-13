@@ -19,6 +19,8 @@
 - `server/api/conversations/messages.post.ts`：创建 conversation message 和 Agent Run，并按 `clientRequestId` 做幂等。
 - `server/api/agent/runs/[runId]/events.get.ts`：为已存在的 run 推送 AgentEvent 流。Mock 流式间隔可通过 `intervalMs` 调整，范围限制为 100-5000 ms。
 - `server/api/agent/runs/[runId]/index.get.ts`：查询 Run 详情，用于详情页和后续 replay/trace 能力。
+- `server/api/agent/runs/index.get.ts`：查询最近 Run 列表，优先读数据库，失败时回退内存 run-store。
+- `server/api/conversations/index.get.ts`：查询 Conversation 列表，优先读数据库，失败时回退内存 run-store。
 - `server/utils/logger.ts`：JSON 日志。
 - `server/utils/prisma.ts`：Prisma client 单例。
 - `server/services/run-persistence.ts`：Prisma 持久化服务，负责将 mock Agent Run、AgentEvent、ToolCall 和 SkillRun 写入数据库。
@@ -45,7 +47,7 @@
 - `server/agent-config/workflows.ts` 定义 Tool 到 Skill 的编排关系和 `inputMapping`；新增 workflow 应优先加在这里，不要把步骤顺序硬编码进 runtime。
 - `server/agent-config/models.ts` 定义可选模型供应商和默认生成参数。
 - `server/services/model-adapters/` 是模型集成边界。新增或切换 LLM 供应商时，实现 `ModelAdapter`，不要让 Agent Runtime 直接依赖某个供应商 SDK。
-- `server/services/model-adapters/volcengine-ark-model-adapter.ts` 是火山方舟平台适配器，当前支持 Seed 2.0 Lite 基础文本流式输出；真实 tool call 后续继续在该边界内扩展。
+- `server/services/model-adapters/volcengine-ark-model-adapter.ts` 是火山方舟平台适配器，当前支持 Seed 2.0 Lite 文本流式输出、OpenAI-compatible tools 传参和流式 tool call 解析。
 - `server/services/schema-validator.ts` 提供 MVP 阶段的 JSON Schema 校验器，用于 Tool 参数和 Skill 输入/输出。
 - `server/services/tool-executor.ts` 校验 Tool 白名单和参数，解析 workflow input mapping，并编排 Skill 执行。
 - `server/services/skill-executor.ts` 将 Skill `handlerName` 映射到具体执行函数，并校验 Skill 输入/输出 schema。
@@ -74,3 +76,4 @@
 - Agent runtime 事件必须使用统一 `AgentEvent` 协议，包含 `eventId`、`eventType`、`conversationId`、`messageId`、`runId`、`traceId`、`sequence`、`status`、`timestamp` 和 `data`，方便前端 Timeline、日志和未来数据库记录关联。
 - `eventType` 表示“发生了什么”，`status` 表示“当前 Run 处于什么状态”，不要混用。
 - Agent 过程必须整体流式展示，不只推最终答案：模型分析使用 `model_text_delta`，Tool 中间态输出使用 `tool_progress_delta`，Skill 中间态输出使用 `skill_progress_delta`，Skill 输入放在 `skill_start.data.input`，Skill 输出放在 `skill_result.data.result`，最终答案分片使用 `final_answer_delta`。
+- 真实模型 tool call 链路为：首次模型流式请求携带 Tool Schema，模型返回 `tool_call` 后由服务端执行 Tool Router 和 Skill workflow，再将 Tool Result 作为 `tool` 消息回填给模型，第二次模型流式请求生成最终答案。

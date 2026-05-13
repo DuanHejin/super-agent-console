@@ -1,5 +1,6 @@
 import type { AgentEvent } from '../../types/agent-event'
 import type { AgentRunStatus } from '../../types/agent-run'
+import type { ModelMessage, ModelToolCall } from '../agent-config'
 import { toolDefinitions } from '../agent-config'
 import {
   createConversationId,
@@ -44,6 +45,8 @@ export interface AgentRunEventStream {
   events: AsyncIterable<AgentEvent>
   getFinalAnswer(): string
 }
+
+const realAgentTools = toolDefinitions.filter((tool) => tool.name === 'analyzeJobAndGeneratePlan')
 
 export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
   const result = await createMockAgentRun(options)
@@ -317,7 +320,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
   }
 }
 
-/** 创建真实模型 Agent 事件流。第一版只接入模型文本流，Tool Calling 后续再接。 */
+/** 创建真实模型 Agent 事件流，支持模型 tool call、Tool/Skill 执行和 Tool Result 回填。 */
 export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRunEventStream {
   const conversationId = options.conversationId ?? createConversationId()
   const messageId = options.messageId ?? createMessageId()
@@ -327,6 +330,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
   let sequence = 0
   let finalAnswer = ''
   let finalAnswerOffset = 0
+  let modelTextOffset = 0
   const normalizedInput = options.input.trim()
   const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
   const model = createModelAdapter({
@@ -394,36 +398,212 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         message: 'Real model stream started'
       })
 
+      const firstMessages: ModelMessage[] = [
+        {
+          role: 'system',
+          content: [
+            '你是 Super Agent Console 的演示智能体。',
+            '如果用户输入包含岗位 JD、招聘要求、面试准备、候选人背景等内容，必须调用 analyzeJobAndGeneratePlan 工具。',
+            '不要编造不存在的工具名；工具参数必须符合 schema。',
+            '如果确实不需要工具，可以直接用中文回答。'
+          ].join('\n')
+        },
+        {
+          role: 'user',
+          content: normalizedInput
+        }
+      ]
+      const toolCalls: ModelToolCall[] = []
+      let modelAnalysis = ''
+
       for await (const streamEvent of model.stream({
-        messages: [
-          {
-            role: 'system',
-            content: '你是 Super Agent Console 的演示智能体。请用中文回答，输出要清晰、具体、适合前端流式展示。'
-          },
-          {
-            role: 'user',
-            content: normalizedInput
-          }
-        ],
+        messages: firstMessages,
+        tools: realAgentTools,
         temperature: options.temperature,
         topP: options.topP,
         maxTokens: options.maxTokens
       })) {
         if (streamEvent.type === 'text_delta' && streamEvent.content) {
-          const currentOffset = finalAnswerOffset
-          finalAnswer += streamEvent.content
-          finalAnswerOffset += streamEvent.content.length
+          const currentOffset = modelTextOffset
+          modelAnalysis += streamEvent.content
+          modelTextOffset += streamEvent.content.length
 
           yield createEvent({
-            eventType: 'final_answer_delta',
-            status: 'generating',
+            eventType: 'model_text_delta',
+            status: 'model_calling',
             name: options.modelName,
             data: {
               content: streamEvent.content,
               offset: currentOffset
             },
-            message: 'Real model final answer delta'
+            message: 'Real model analysis delta'
           })
+        }
+
+        if (streamEvent.type === 'tool_call') {
+          toolCalls.push(streamEvent.toolCall)
+        }
+      }
+
+      const toolCall = toolCalls[0]
+
+      if (!toolCall) {
+        finalAnswer = modelAnalysis
+      } else {
+        yield createEvent({
+          eventType: 'tool_call_start',
+          status: 'tool_calling',
+          name: toolCall.name,
+          data: {
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            args: toolCall.arguments
+          },
+          message: 'Real model tool call started'
+        })
+
+        const toolEvents: AgentEvent[] = []
+        const toolExecution = await executeTool({
+          name: toolCall.name,
+          args: toolCall.arguments,
+          onToolProgress(delta) {
+            toolEvents.push(
+              createEvent({
+                eventType: 'tool_progress_delta',
+                status: 'tool_calling',
+                name: toolCall.name,
+                data: {
+                  toolCallId: toolCall.id,
+                  toolName: toolCall.name,
+                  content: delta.content,
+                  offset: delta.offset,
+                  stage: delta.stage
+                },
+                message: 'Real tool progress delta'
+              })
+            )
+          },
+          onSkillStart(skillExecution) {
+            toolEvents.push(
+              createEvent({
+                eventType: 'skill_start',
+                status: 'skill_running',
+                name: skillExecution.skillName,
+                data: {
+                  toolCallId: toolCall.id,
+                  stepId: skillExecution.stepId,
+                  skillRunId: skillExecution.skillRunId,
+                  skillName: skillExecution.skillName,
+                  input: skillExecution.input
+                },
+                message: 'Real skill started'
+              })
+            )
+          },
+          onSkillProgress(skillExecution, delta) {
+            toolEvents.push(
+              createEvent({
+                eventType: 'skill_progress_delta',
+                status: 'skill_running',
+                name: skillExecution.skillName,
+                data: {
+                  toolCallId: toolCall.id,
+                  stepId: skillExecution.stepId,
+                  skillRunId: skillExecution.skillRunId,
+                  skillName: skillExecution.skillName,
+                  content: delta.content,
+                  offset: delta.offset,
+                  stage: delta.stage
+                },
+                message: 'Real skill progress delta'
+              })
+            )
+          },
+          onSkillResult(skillExecution) {
+            toolEvents.push(
+              createEvent({
+                eventType: 'skill_result',
+                status: 'skill_running',
+                name: skillExecution.skillName,
+                data: {
+                  toolCallId: toolCall.id,
+                  stepId: skillExecution.stepId,
+                  skillRunId: skillExecution.skillRunId,
+                  skillName: skillExecution.skillName,
+                  result: skillExecution.result
+                },
+                message: 'Real skill finished'
+              })
+            )
+          }
+        })
+
+        for (const toolEvent of toolEvents) {
+          yield toolEvent
+        }
+
+        yield createEvent({
+          eventType: 'tool_call_result',
+          status: 'tool_calling',
+          name: toolExecution.tool.name,
+          data: {
+            toolCallId: toolCall.id,
+            toolName: toolExecution.tool.name,
+            result: toolExecution.result
+          },
+          message: 'Real tool call finished'
+        })
+
+        yield createEvent({
+          eventType: 'model_call_start',
+          status: 'generating',
+          name: options.modelName,
+          data: {
+            provider: options.modelProvider,
+            model: options.modelName,
+            phase: 'final_answer'
+          },
+          message: 'Real model final answer stream started'
+        })
+
+        for await (const streamEvent of model.stream({
+          messages: [
+            ...firstMessages,
+            {
+              role: 'assistant',
+              content: modelAnalysis,
+              toolCalls: [toolCall]
+            },
+            {
+              role: 'tool',
+              toolCallId: toolCall.id,
+              content: JSON.stringify(toolExecution.result)
+            },
+            {
+              role: 'user',
+              content: '请基于工具结果，生成一份清晰、可执行的最终回答。'
+            }
+          ],
+          temperature: options.temperature,
+          topP: options.topP,
+          maxTokens: options.maxTokens
+        })) {
+          if (streamEvent.type === 'text_delta' && streamEvent.content) {
+            const currentOffset = finalAnswerOffset
+            finalAnswer += streamEvent.content
+            finalAnswerOffset += streamEvent.content.length
+
+            yield createEvent({
+              eventType: 'final_answer_delta',
+              status: 'generating',
+              name: options.modelName,
+              data: {
+                content: streamEvent.content,
+                offset: currentOffset
+              },
+              message: 'Real model final answer delta'
+            })
+          }
         }
       }
 

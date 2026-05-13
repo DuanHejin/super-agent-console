@@ -6,6 +6,13 @@
       @mock-run="runMock"
       @clear="clearRun"
     />
+    <RunMetaBar
+      :conversation-id="conversationId"
+      :message-id="messageId"
+      :run-id="runId"
+      :trace-id="traceId"
+      :status="status"
+    />
     <AgentStreamOutput
       :analysis-content="modelAnalysis"
       :content="finalAnswer"
@@ -18,13 +25,6 @@
     />
     <AgentTimeline
       :events="events"
-      :status="status"
-    />
-    <RunMetaBar
-      :conversation-id="conversationId"
-      :message-id="messageId"
-      :run-id="runId"
-      :trace-id="traceId"
       :status="status"
     />
   </section>

@@ -8,7 +8,7 @@
         <em v-if="event.name">{{ event.name }}</em>
         <em v-if="event.message">{{ event.message }}</em>
         <pre v-if="shouldShowData(event)">{{ formatEventData(event.data) }}</pre>
-        <span>{{ event.timestamp }}</span>
+        <span>{{ formatLocalDateTime(event.timestamp) }}</span>
       </li>
       <li v-if="status === 'running'" class="timeline-loading">
         <strong>Running</strong>
@@ -31,6 +31,8 @@ defineProps<{
   events: AgentEvent[]
   status: 'idle' | 'running' | 'success' | 'failed'
 }>()
+
+const { formatLocalDateTime } = useLocalDateTime()
 
 const detailedEventTypes = new Set<AgentEvent['eventType']>([
   'tool_call_start',

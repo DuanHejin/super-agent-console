@@ -2,8 +2,9 @@ import type {
   ModelMessage,
   ModelRequest,
   ModelResponse,
+  ModelToolCall,
   ModelStreamEvent,
-  ModelToolCall
+  ToolDefinition
 } from '../agent-config'
 
 export interface VolcengineArkClientOptions {
@@ -26,6 +27,12 @@ interface ArkChatCompletionChoice {
 
 interface ArkChatCompletionResponse {
   choices?: ArkChatCompletionChoice[]
+}
+
+interface ArkStreamToolCallAccumulator {
+  id?: string
+  name?: string
+  argumentsText: string
 }
 
 const defaultBaseUrl = 'https://ark.cn-beijing.volces.com/api/v3'
@@ -84,20 +91,23 @@ async function fetchArkChatCompletion(options: {
     throw new Error('Volcengine Ark client requires MODEL_NAME.')
   }
 
+  const body = {
+    model: options.options.modelId,
+    stream: options.stream,
+    messages: options.request.messages.map(toArkMessage),
+    temperature: options.request.temperature,
+    top_p: options.request.topP,
+    max_tokens: options.request.maxTokens,
+    ...toArkToolOptions(options.request.tools)
+  }
+
   const response = await fetch(`${options.options.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${options.options.apiKey}`
     },
-    body: JSON.stringify({
-      model: options.options.modelId,
-      stream: options.stream,
-      messages: options.request.messages.map(toArkMessage),
-      temperature: options.request.temperature,
-      top_p: options.request.topP,
-      max_tokens: options.request.maxTokens
-    })
+    body: JSON.stringify(body)
   })
 
   if (!response.ok) {
@@ -110,9 +120,50 @@ async function fetchArkChatCompletion(options: {
 }
 
 function toArkMessage(message: ModelMessage) {
-  return {
+  const arkMessage: Record<string, unknown> = {
     role: message.role === 'developer' ? 'system' : message.role,
     content: message.content
+  }
+
+  if (message.role === 'tool' && message.toolCallId) {
+    arkMessage.tool_call_id = message.toolCallId
+  }
+
+  if (message.toolCalls?.length) {
+    arkMessage.tool_calls = message.toolCalls.map(toArkToolCall)
+  }
+
+  return arkMessage
+}
+
+function toArkToolOptions(tools?: readonly ToolDefinition[]) {
+  const enabledTools = tools?.filter((tool) => tool.enabled) ?? []
+
+  if (!enabledTools.length) {
+    return {}
+  }
+
+  return {
+    tools: enabledTools.map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters
+      }
+    })),
+    tool_choice: 'auto'
+  }
+}
+
+function toArkToolCall(toolCall: ModelToolCall) {
+  return {
+    id: toolCall.id,
+    type: 'function',
+    function: {
+      name: toolCall.name,
+      arguments: JSON.stringify(toolCall.arguments)
+    }
   }
 }
 
@@ -126,6 +177,7 @@ async function* parseArkSseStream(response: Response): AsyncIterable<ModelStream
   const decoder = new TextDecoder()
   let buffer = ''
   let doneEmitted = false
+  const toolCallAccumulators = new Map<number, ArkStreamToolCallAccumulator>()
 
   while (true) {
     const { value, done } = await reader.read()
@@ -140,7 +192,7 @@ async function* parseArkSseStream(response: Response): AsyncIterable<ModelStream
     buffer = events.remaining
 
     for (const rawEvent of events.completeEvents) {
-      for (const streamEvent of parseArkSseEvent(rawEvent)) {
+      for (const streamEvent of parseArkSseEvent(rawEvent, toolCallAccumulators)) {
         if (streamEvent.type === 'done') {
           doneEmitted = true
         }
@@ -154,7 +206,7 @@ async function* parseArkSseStream(response: Response): AsyncIterable<ModelStream
   buffer = buffer.replace(/\r\n/g, '\n')
 
   if (buffer.trim()) {
-    for (const streamEvent of parseArkSseEvent(buffer)) {
+    for (const streamEvent of parseArkSseEvent(buffer, toolCallAccumulators)) {
       if (streamEvent.type === 'done') {
         doneEmitted = true
       }
@@ -187,7 +239,10 @@ function splitSseEvents(buffer: string) {
   }
 }
 
-function parseArkSseEvent(rawEvent: string): ModelStreamEvent[] {
+function parseArkSseEvent(
+  rawEvent: string,
+  toolCallAccumulators: Map<number, ArkStreamToolCallAccumulator>
+): ModelStreamEvent[] {
   const events: ModelStreamEvent[] = []
   const dataLines = rawEvent
     .split('\n')
@@ -206,7 +261,6 @@ function parseArkSseEvent(rawEvent: string): ModelStreamEvent[] {
     const parsed = JSON.parse(dataLine) as ArkChatCompletionResponse
     const choice = parsed.choices?.[0]
     const content = extractTextContent(choice?.delta?.content)
-    const toolCalls = parseToolCalls(choice?.delta?.tool_calls)
 
     if (content) {
       events.push({
@@ -215,14 +269,15 @@ function parseArkSseEvent(rawEvent: string): ModelStreamEvent[] {
       })
     }
 
-    for (const toolCall of toolCalls) {
-      events.push({
-        type: 'tool_call',
-        toolCall
-      })
-    }
+    collectStreamToolCallDelta(choice?.delta?.tool_calls, toolCallAccumulators)
 
     if (choice?.finish_reason) {
+      for (const toolCall of flushStreamToolCalls(toolCallAccumulators)) {
+        events.push({
+          type: 'tool_call',
+          toolCall
+        })
+      }
       events.push({
         type: 'done'
       })
@@ -230,6 +285,64 @@ function parseArkSseEvent(rawEvent: string): ModelStreamEvent[] {
   }
 
   return events
+}
+
+function collectStreamToolCallDelta(
+  value: unknown,
+  accumulators: Map<number, ArkStreamToolCallAccumulator>
+) {
+  if (!Array.isArray(value)) {
+    return
+  }
+
+  for (const item of value) {
+    if (!isRecord(item)) {
+      continue
+    }
+
+    const index = typeof item.index === 'number' ? item.index : accumulators.size
+    const current = accumulators.get(index) ?? {
+      argumentsText: ''
+    }
+    const functionValue = item.function
+
+    if (typeof item.id === 'string') {
+      current.id = item.id
+    }
+
+    if (isRecord(functionValue)) {
+      if (typeof functionValue.name === 'string') {
+        current.name = functionValue.name
+      }
+
+      if (typeof functionValue.arguments === 'string') {
+        current.argumentsText += functionValue.arguments
+      }
+    }
+
+    accumulators.set(index, current)
+  }
+}
+
+function flushStreamToolCalls(accumulators: Map<number, ArkStreamToolCallAccumulator>): ModelToolCall[] {
+  const toolCalls = Array.from(accumulators.entries())
+    .sort(([leftIndex], [rightIndex]) => leftIndex - rightIndex)
+    .map(([, item]): ModelToolCall | undefined => {
+      if (!item.id || !item.name) {
+        return undefined
+      }
+
+      return {
+        id: item.id,
+        name: item.name,
+        arguments: parseToolArguments(item.argumentsText)
+      }
+    })
+    .filter((item): item is ModelToolCall => Boolean(item))
+
+  accumulators.clear()
+
+  return toolCalls
 }
 
 function extractTextContent(content: unknown): string {
