@@ -76,6 +76,14 @@ Current image registry:
 ghcr.io/duanhejin/super-agent-console
 ```
 
+如果香港服务器访问火山方舟北京接口持续不稳定，备选迁移方案见：
+
+```txt
+docs/domestic-server-tcr-migration.md
+```
+
+该方案将运行节点迁到国内轻量服务器，并把镜像仓库从 GHCR 切到腾讯云 TCR，避免国内 K3S 直接拉取境外 GHCR 镜像。
+
 K3S pulls this private image with:
 
 ```txt

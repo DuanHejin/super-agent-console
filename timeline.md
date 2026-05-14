@@ -88,3 +88,4 @@
 ## 2026-05-14
 
 - 排查真实模型线上 Run 失败问题，确认 `model_call_start` 到 `agent_error` 间隔命中 `MODEL_REQUEST_TIMEOUT_MS`；增强 `agent_error` 结构化日志，输出 `phase`、`errorMessage`、`isTimeout` 和 `requestTimeoutMs`，并将模型请求超时示例值调整为 180 秒。
+- 新增国内轻量服务器 + 腾讯云 TCR 迁移预案，记录从香港 K3S/GHCR 切换到国内 K3S/TCR 的备案、服务器初始化、镜像仓库、GitHub Actions、MySQL 数据、HTTPS、CLS 和回滚步骤。
