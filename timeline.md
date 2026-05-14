@@ -81,3 +81,4 @@
 - 增加公网试用保护：登录失败 IP 频控、全站 Run 频控、单用户 / 全站并发 Run 限制、模型请求超时，以及 K3S 应用 Pod resources patch。
 - 新增 `MODEL_ENABLED` 模型防灾开关，关闭后网站基础功能保留，Run 创建直接返回模型关闭提示，避免继续消耗真实模型 token。
 - 新增 `docs/public-trial-safety.md`，汇总公网试用访问控制、频控并发、模型防灾开关、K3S 资源限制和人工验证步骤。
+- 新增管理员专用 Feedback 列表页和 `GET /api/feedback`，用于线上查看朋友试用反馈；普通访问码访问仍返回 404。

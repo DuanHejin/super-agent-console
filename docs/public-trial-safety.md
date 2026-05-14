@@ -30,6 +30,7 @@
 
 - Run 列表
 - Conversation 列表
+- Feedback 列表
 
 普通访问码登录后不会展示这两个入口，直接访问对应页面和 API 也会返回 404。
 
@@ -171,6 +172,6 @@ kubectl get pods -n default
 
 访问网站后，建议做三项人工验证：
 
-1. 普通访问码登录后，可以正常使用 Agent Console，但看不到 Run / Conversation 列表入口。
-2. 管理员访问码登录后，可以看到 Run / Conversation 列表入口。
+1. 普通访问码登录后，可以正常使用 Agent Console，但看不到 Run / Conversation / Feedback 列表入口。
+2. 管理员访问码登录后，可以看到 Run / Conversation / Feedback 列表入口。
 3. 临时设置 `MODEL_ENABLED=false` 后，点击发送会直接提示模型能力关闭，不会创建新的 Run。

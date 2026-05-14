@@ -9,6 +9,7 @@
       <nav v-if="showDebugLinks" class="quick-links">
         <NuxtLink to="/runs">Run 列表</NuxtLink>
         <NuxtLink to="/conversations">Conversation 列表</NuxtLink>
+        <NuxtLink to="/feedback">Feedback 列表</NuxtLink>
       </nav>
     </section>
 

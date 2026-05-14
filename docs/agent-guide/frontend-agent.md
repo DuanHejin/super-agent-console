@@ -18,6 +18,7 @@
 - `pages/deploy.vue`：部署信息页面。
 - `pages/conversations/index.vue`：Conversation 列表页，展示会话摘要和最新 Run 入口；本地 Nuxt dev 环境或管理员登录后开放。
 - `pages/runs/index.vue`：Run 列表页，展示最近 Agent Run 并支持进入详情页；本地 Nuxt dev 环境或管理员登录后开放。
+- `pages/feedback/index.vue`：Feedback 列表页，展示朋友反馈、昵称、联系方式和提交页面；本地 Nuxt dev 环境或管理员登录后开放。
 - `components/AgentConsole.vue`：Agent Console 容器。
 - `components/FeedbackWidget.vue`：全局反馈浮层和回到顶部按钮，登录页不展示。
 - `composables/useAgentRun.ts`：Run 状态编排。先创建 conversation message / Agent Run，再订阅 run 事件流。
@@ -54,4 +55,4 @@
 - 展示服务端 ISO 时间时，统一转换为浏览器本地时间，不直接显示 UTC ISO 字符串。
 - 模型最终回答使用 `MarkdownContent` 展示 Markdown，底层通过 `showdown` 转换，并在转换前转义原始 HTML。
 - 全局反馈入口挂在 `app.vue`，不要在具体页面重复挂载；反馈提交到 `POST /api/feedback`，会把登录时填写的可选昵称同步写入 Feedback 表，回到顶部按钮在滚动超过 480px 后展示。
-- 首页 Run 列表和 Conversation 列表入口在本地开发环境直接展示；线上只有管理员访问码登录后展示，避免朋友试用环境看到全局历史数据。
+- 首页 Run 列表、Conversation 列表和 Feedback 列表入口在本地开发环境直接展示；线上只有管理员访问码登录后展示，避免朋友试用环境看到全局历史数据和反馈内容。

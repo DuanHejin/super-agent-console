@@ -20,6 +20,7 @@
 - `server/api/auth/login.post.ts`：访问码登录，校验成功后写入 httpOnly cookie；可选昵称会随签名 session 一起保存。
 - `server/middleware/auth.ts`：保护页面和 API；登录、健康检查和静态资源放行。
 - `server/api/feedback.post.ts`：接收朋友试用反馈，写入 Feedback 表；内容长度限制为 2-2000 字符，并记录登录时填写的可选昵称。
+- `server/api/feedback.get.ts`：管理员查看反馈列表；本地开发环境直接开放，线上必须使用管理员访问码登录。
 - `server/api/agent/runs/[runId]/events.get.ts`：为已存在的 run 推送 AgentEvent 流。SSE 流式间隔可通过 `intervalMs` 调整，范围限制为 100-5000 ms。
 - `server/api/agent/runs/[runId]/index.get.ts`：查询 Run 详情，用于详情页和后续 replay/trace 能力。
 - `server/api/agent/runs/index.get.ts`：查询最近 Run 列表，优先读数据库，失败时回退内存 run-store；仅 `NODE_ENV=development` 开放。
@@ -78,7 +79,7 @@
 - 真实模型请求会传入 `MODEL_REQUEST_TIMEOUT_MS`，超时后中断模型请求并推送失败事件，避免 SSE 长时间占住连接。
 - `POST /api/feedback` 直接写数据库，不做内存回退；部署到线上前必须执行 Prisma migration，确保 Feedback 表已经创建。
 - 昵称不是凭证，不做加密；它存放在已签名的 `sac_auth` payload 中，服务端读取后落到 Feedback.nickname，方便识别反馈来源。
-- Run 列表和 Conversation 列表属于调试入口：本地开发环境直接开放；线上必须使用 `ADMIN_ACCESS_CODES` 中的管理员访问码登录后才能查看，普通朋友访问码返回 404。
+- Run 列表、Conversation 列表和 Feedback 列表属于调试入口：本地开发环境直接开放；线上必须使用 `ADMIN_ACCESS_CODES` 中的管理员访问码登录后才能查看，普通朋友访问码返回 404。
 
 ## 修改前检查
 
