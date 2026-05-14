@@ -78,7 +78,7 @@
 - `POST /api/conversations/messages` 会按访问用户做内存频控：默认每分钟 3 次、每天 30 次，并限制单次输入长度默认不超过 5000 字符。
 - `MODEL_ENABLED=false` 时 Run 创建接口优先返回模型关闭提示，不进入频控、幂等、落库和 SSE 链路。
 - Run 创建同时受全站频控保护，SSE 执行阶段受单用户并发和全站并发保护；登录失败按 IP 做分钟级频控。
-- 真实模型请求会传入 `MODEL_REQUEST_TIMEOUT_MS`，超时后中断模型请求并推送失败事件，避免 SSE 长时间占住连接。
+- 真实模型请求会传入 `MODEL_REQUEST_TIMEOUT_MS`，超时后中断模型请求并推送失败事件，避免 SSE 长时间占住连接；`agent_error` 日志会带上 `phase`、`errorMessage`、`isTimeout` 和 `requestTimeoutMs`，用于判断是工具规划、Tool/Skill 执行还是最终回答阶段超时。
 - `POST /api/feedback` 直接写数据库，不做内存回退；部署到线上前必须执行 Prisma migration，确保 Feedback 表已经创建。
 - 昵称不是凭证，不做加密；它存放在已签名的 `sac_auth` payload 中，服务端读取后落到 Feedback.nickname，方便识别反馈来源。
 - Run 列表、Conversation 列表和 Feedback 列表属于调试入口：本地开发环境直接开放；线上必须使用 `ADMIN_ACCESS_CODES` 中的管理员访问码登录后才能查看，普通朋友访问码返回 404。
