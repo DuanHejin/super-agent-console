@@ -43,6 +43,7 @@
 - 朋友试用阶段使用访问码保护：`ACCESS_CODES`、`ADMIN_ACCESS_CODES` 和 `AUTH_COOKIE_SECRET` 放入 Secret；`MODEL_ENABLED`、`RUN_RATE_LIMIT_MINUTE`、`RUN_RATE_LIMIT_DAY`、`GLOBAL_RUN_RATE_LIMIT_MINUTE`、`GLOBAL_RUN_RATE_LIMIT_DAY`、`CONCURRENT_RUNS_PER_USER`、`CONCURRENT_RUNS_GLOBAL`、`AUTH_LOGIN_RATE_LIMIT_MINUTE`、`MODEL_REQUEST_TIMEOUT_MS`、`MAX_RUN_INPUT_LENGTH` 放入 ConfigMap。
 - 不要打印 API key、数据库密码或完整敏感环境变量值。
 - `/api/ready` 只返回脱敏后的配置加载状态、限频值和模型开关状态，可用于 K3S 排查环境变量是否生效。
+- `/api/config-demo` 只能返回服务端私有配置是否已加载、访问码数量等脱敏信息，不允许返回 `modelProvider`、`modelName`、`modelBaseUrl`、`logLevel` 等具体服务端配置值。
 - `.env.example` 作为本地开发模板和 K3S 配置映射参考，`DATABASE_URL` 示例默认指向本机 MySQL dev 库。
 
 ## Agent 配置层
@@ -81,6 +82,7 @@
 - `POST /api/feedback` 直接写数据库，不做内存回退；部署到线上前必须执行 Prisma migration，确保 Feedback 表已经创建。
 - 昵称不是凭证，不做加密；它存放在已签名的 `sac_auth` payload 中，服务端读取后落到 Feedback.nickname，方便识别反馈来源。
 - Run 列表、Conversation 列表和 Feedback 列表属于调试入口：本地开发环境直接开放；线上必须使用 `ADMIN_ACCESS_CODES` 中的管理员访问码登录后才能查看，普通朋友访问码返回 404。
+- Demo fallback 链路仍会传入 mock ModelAdapter，避免 Skill 配置为 `mode: model` 时因缺少 adapter 失败；真实线上应通过 `MODEL_PROVIDER=volcengine_ark` 进入真实模型链路。
 
 ## 修改前检查
 

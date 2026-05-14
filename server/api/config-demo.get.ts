@@ -13,13 +13,15 @@ export default defineEventHandler(() => {
       nodeEnv: config.nodeEnv
     },
     serverOnlyConfig: {
-      modelProvider: config.modelProvider,
-      modelName: config.modelName,
-      modelBaseUrl: config.modelBaseUrl,
-      logLevel: config.logLevel,
-      mockModelEnabled: config.mockModelEnabled,
+      modelEnabled: config.modelEnabled,
+      modelProviderLoaded: Boolean(config.modelProvider),
+      modelNameLoaded: Boolean(config.modelName),
+      modelBaseUrlLoaded: Boolean(config.modelBaseUrl),
       databaseUrlLoaded: Boolean(config.databaseUrl),
       modelApiKeyLoaded: Boolean(config.modelApiKey),
+      accessCodesCount: config.accessCodes.split(',').map((code) => code.trim()).filter(Boolean).length,
+      adminAccessCodesCount: config.adminAccessCodes.split(',').map((code) => code.trim()).filter(Boolean).length,
+      authCookieSecretLoaded: Boolean(config.authCookieSecret),
       demoServerTokenLoaded: Boolean(config.demoServerToken)
     }
   }
