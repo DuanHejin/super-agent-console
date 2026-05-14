@@ -30,3 +30,55 @@
 - 新增项目级 skill `.agents/skills/github-pr-release`，沉淀从任意开发分支创建 PR、review、merge 到 `release` 并触发 CI/CD 的操作流程。
 - 新增 K3S ConfigMap / Secret demo 配置、部署说明和浏览器端非敏感 runtimeConfig 读取示例，用于验证生产环境配置注入链路。
 - 修复 Nuxt Docker 镜像中的静态资源布局，将 `.output/public` 同步到 Nitro runtime 查找的 `.output/server/chunks/public`，避免线上 `/_nuxt/*.js` 资源 500。
+- 新增 `docs/ops-runbook.md`，沉淀 K3S 资源、release 发布流程、GHCR 拉取、ConfigMap / Secret、CLS 日志采集与 Nuxt 静态资源排障基线。
+- 实现 Mock Agent 主流程：新增服务端 Mock Run 接口，生成 runId、traceId、事件列表和最终输出，并在首页 Agent Console 中展示输入、Timeline、输出与运行元信息。
+- 新增 `POST /api/agent/run` SSE 流式接口，并让前端 Agent Console 通过浏览器 fetch 逐步消费 AgentEvent，实时更新 Timeline 与输出区。
+- 统一 AgentEvent 协议字段为 `eventType`、`runId`、`traceId`、`sequence`、`timestamp`，并将 SSE 推送事件同步输出为结构化 JSON 日志，方便后续 CLS 检索和数据库落库。
+
+## 2026-05-11
+
+- 新增三阶段 Agent 架构实施计划：MVP 核心链路、进阶运行能力、高阶平台能力，分别记录在 `docs/plans/mvp-agent-core-plan.md`、`docs/plans/advanced-agent-runtime-plan.md`、`docs/plans/platform-agent-capability-plan.md`，后续按 checklist 勾选推进。
+- 新增 Agent 配置化基础：用 TS 集中定义 Tool Schema、Skill Definition、Tool Workflow 和 Model 配置，并新增 mock / doubao 模型适配器骨架，为后续配置后台和真实模型接入预留扩展边界。
+- 新增 MVP 双接口链路：`POST /api/conversations/messages` 创建 conversation / message / run 并按 `clientRequestId` 做幂等，`GET /api/agent/runs/:runId/events` 基于 `runId` 推送 SSE；前端发送流程同步调整为先创建 Run 再订阅事件流。
+- 统一 AgentEvent MVP 协议，新增 `eventId`、`status`、`data` 等标准字段，并引入 Agent Run 状态机校验，明确区分事件类型与运行状态。
+- 补齐 Agent 全过程流式展示：模型分析阶段通过 `model_text_delta` 推送，Tool 调用、Skill 输入、Skill 结果和最终答案均通过 AgentEvent 实时展示到前端。
+- 新增 Mock SSE 推送间隔配置：服务端支持 `intervalMs` query，前端可通过页面 `sseIntervalMs` query 或 `agent:sseIntervalMs` localStorage 调整演示速度。
+- 新增通用打字机队列 composable，将模型分析流和最终答案流从“整段追加”改为字符级渐进展示。
+- 新增前端运行中 loading 交互，在 AI Output 和 Timeline 中提示当前 Agent Run 仍在执行。
+- 接入 Tool Router、轻量 JSON Schema 校验、workflow input mapping 和 Skill Executor，`analyzeJobAndGeneratePlan` Tool 已按配置编排两个 Skill 并产出实时 AgentEvent。
+- 补充 Agent 配置类型、运行状态、事件协议、Tool/Skill 执行链路等核心类型与方法注释，方便后续复盘和扩展配置后台。
+- 新增 Run 详情查询接口和 `/runs/:runId` 页面，支持从首页跳转查看用户输入、运行状态、AgentEvent、Tool / Skill 过程和最终答案。
+- 新增 Tool / Skill 过程展示面板，将 AgentEvent 中的 Tool 参数、Skill 输入输出和 Tool 返回转换为可读 UI，避免前端只能等待最终答案。
+
+## 2026-05-12
+
+- 新增 `tool_progress_delta` 和 `skill_progress_delta` 事件，让 Tool 编排层和 Skill handler 的中间态输出也能通过 SSE 实时展示到 Timeline、过程卡片和 Run 详情页。
+- 完善 Prisma MVP 数据模型，补齐 Conversation、Message、AgentRun、AgentEvent、ToolCall、SkillRun 和 IdempotencyRecord，为后续替换内存 run-store 做准备。
+- 新增 K3S 自建 MySQL 部署说明，记录 Secret、PVC、Deployment、Service、可选生产库初始化 Job、本地 port-forward 和 Prisma migration 操作步骤。
+- 补充本地访问 K3S MySQL 的双转发链路说明，记录 OrcaTerm `kubectl port-forward`、本地 SSH 隧道、连通性验证和可视化客户端连接参数。
+- 修正 K3S MySQL 文档中的本地连接说明，统一使用敏感值占位符，并补充端口监听、连通性、Prisma 连接和常见错误检查 case。
+- 调整数据库开发策略：本地开发改为连接本机 MySQL，K3S MySQL 保留为线上 / 类生产库，双层转发仅作为临时排查手段。
+- 更新 `.env.example` 的 `DATABASE_URL` 示例，默认指向本机 MySQL dev 库和应用账号。
+- 新增 Prisma 持久化服务，将 mock Agent Run 的 Conversation、Message、AgentRun、IdempotencyRecord、AgentEvent、ToolCall 和 SkillRun 写入 MySQL，并让 Run 详情接口优先读取数据库。
+- 调整本地 dev 脚本为 `nuxt dev --dotenv .env.local`，确保 Prisma runtime 能读取本机 MySQL 的 `DATABASE_URL`。
+
+## 2026-05-13
+
+- 新增大模型平台与模型选择知识库，明确区分火山方舟等 MaaS 平台、豆包 Seed / DeepSeek / 通义千问等具体模型，以及项目内 Model Adapter 的职责边界。
+- 调整真实模型接入计划描述：第一版优先通过火山方舟平台接入豆包 Seed 2.0 Lite，并保留 Seed 2.0 Pro 作为复杂推理和 tool call 稳定性对比模型。
+- 新增火山方舟平台 Adapter 和通用 `MODEL_*` 配置，支持通过 `MODEL_PROVIDER=volcengine_ark`、`MODEL_NAME=doubao-seed-2-0-lite-260428` 接入 Seed 2.0 Lite 基础文本流式输出。
+- 清理旧 `ARK_*` runtime 字段和旧 `doubao` adapter 骨架，统一使用 `MODEL_*` 配置表达模型平台、具体模型和鉴权信息。
+- 接入真实模型 tool call 闭环：火山方舟请求携带 Tool Schema，流式解析模型返回的 tool call，服务端执行 Tool Router / Skill workflow，并将 Tool Result 回填给模型生成最终答案。
+- 优化 Agent Console 和复盘体验：将 Run 详情入口上移，新增 Conversation / Run 列表页，统一本地时间展示，并支持模型最终回答的轻量 Markdown 渲染。
+- 优化真实 tool call 事件语义，新增 `model_tool_call_decision` 事件区分工具规划和最终回答两个模型阶段，并将两个 Skill 调整为 `model` 类型，由 Skill 内部调用模型生成结构化 JSON。
+- 合并模型流式 token 事件粒度，避免 `model_text_delta`、`skill_progress_delta`、`final_answer_delta` 逐 token 落库导致单次 Run 事件过多；同时将 Markdown 渲染切换为 `showdown`。
+- 清理首页早期占位卡片区域，首页聚焦项目标题、列表入口和 Agent Console 主流程。
+- 新增访问码登录、httpOnly cookie 鉴权、Run 创建频控和输入长度限制，用于朋友试用阶段保护服务器资源和模型 token 消耗。
+- 清理前端 Mock Run 文案和早期独立 mock/run 接口，新增全局右下角反馈弹窗、反馈落库接口和回到顶部按钮，方便朋友试用后提交反馈意见。
+- 将首页 Run 列表和 Conversation 列表入口调整为本地开发环境直接展示、线上管理员访问码登录后展示，并让对应列表页和列表 API 对普通朋友访问码返回 404。
+- 登录页新增可选昵称字段，昵称写入签名 cookie，并在提交反馈时落到 Feedback 表，方便识别朋友试用反馈来源。
+- 调整首页标题和介绍文案，从工程搭建说明改为面向试用者的 AI 求职准备 Agent 产品说明。
+- 增加公网试用保护：登录失败 IP 频控、全站 Run 频控、单用户 / 全站并发 Run 限制、模型请求超时，以及 K3S 应用 Pod resources patch。
+- 新增 `MODEL_ENABLED` 模型防灾开关，关闭后网站基础功能保留，Run 创建直接返回模型关闭提示，避免继续消耗真实模型 token。
+- 新增 `docs/public-trial-safety.md`，汇总公网试用访问控制、频控并发、模型防灾开关、K3S 资源限制和人工验证步骤。
+- 新增管理员专用 Feedback 列表页和 `GET /api/feedback`，用于线上查看朋友试用反馈；普通访问码访问仍返回 404。

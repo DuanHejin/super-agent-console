@@ -7,6 +7,7 @@ export default defineEventHandler(() => {
     status: 'ready',
     env: config.nodeEnv,
     version: config.appVersion,
+    modelEnabled: config.modelEnabled,
     configSource: 'env-or-nacos'
   }
 })
