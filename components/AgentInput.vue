@@ -1,14 +1,31 @@
 <template>
   <section class="panel">
     <h2>Input</h2>
-    <textarea placeholder="粘贴岗位 JD 或输入测试文本" />
+    <textarea
+      :disabled="disabled"
+      :value="modelValue"
+      placeholder="粘贴岗位 JD 或输入测试文本"
+      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+    />
     <div class="actions">
-      <button type="button">Mock Run</button>
-      <button type="button">Real Run</button>
-      <button type="button">Clear</button>
+      <button type="button" :disabled="disabled" @click="emit('run')">发送</button>
+      <button type="button" :disabled="disabled" @click="emit('clear')">Clear</button>
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+defineProps<{
+  modelValue: string
+  disabled?: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  run: []
+  clear: []
+}>()
+</script>
 
 <style scoped>
 .panel {
@@ -42,5 +59,11 @@ button {
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
+}
+
+button:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>

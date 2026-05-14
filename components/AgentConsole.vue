@@ -1,11 +1,56 @@
 <template>
   <section class="agent-console">
-    <AgentInput />
-    <AgentStreamOutput />
-    <AgentTimeline />
-    <RunMetaBar />
+    <AgentInput
+      v-model="input"
+      :disabled="status === 'running'"
+      @run="runAgent"
+      @clear="clearRun"
+    />
+    <RunMetaBar
+      :conversation-id="conversationId"
+      :message-id="messageId"
+      :run-id="runId"
+      :trace-id="traceId"
+      :status="status"
+    />
+    <AgentStreamOutput
+      :analysis-content="modelAnalysis"
+      :content="finalAnswer"
+      :error="error"
+      :status="status"
+      :phase="currentPhase"
+    />
+    <ToolCallCard
+      :tools="toolProcesses"
+      :status="status"
+      :phase="currentPhase"
+    />
+    <AgentTimeline
+      :events="events"
+      :status="status"
+      :phase="currentPhase"
+    />
   </section>
 </template>
+
+<script setup lang="ts">
+const {
+  status,
+  conversationId,
+  messageId,
+  runId,
+  traceId,
+  input,
+  events,
+  toolProcesses,
+  currentPhase,
+  modelAnalysis,
+  finalAnswer,
+  error,
+  runAgent,
+  clearRun
+} = useAgentRun()
+</script>
 
 <style scoped>
 .agent-console {
