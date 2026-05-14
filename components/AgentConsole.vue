@@ -3,7 +3,7 @@
     <AgentInput
       v-model="input"
       :disabled="status === 'running'"
-      @mock-run="runMock"
+      @run="runAgent"
       @clear="clearRun"
     />
     <RunMetaBar
@@ -47,7 +47,7 @@ const {
   modelAnalysis,
   finalAnswer,
   error,
-  runMock,
+  runAgent,
   clearRun
 } = useAgentRun()
 </script>

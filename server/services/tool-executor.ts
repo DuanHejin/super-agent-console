@@ -54,7 +54,7 @@ export interface ExecuteToolOptions {
   /** 传给 model 类型 Skill 的模型适配器。 */
   model?: ModelAdapter
   /** 传给 model 类型 Skill 的生成参数。 */
-  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens'>
+  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens' | 'timeoutMs'>
   /** Tool 编排层产生中间态输出时触发，用于推送 `tool_progress_delta`。 */
   onToolProgress?: (delta: ToolProgressDelta) => void
   /** 执行 Skill 前给 Agent Runtime 的回调，用于推送 `skill_start`。 */

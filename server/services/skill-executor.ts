@@ -38,7 +38,7 @@ export interface ExecuteSkillOptions {
   /** Skill 为 model 模式时使用的模型适配器。 */
   model?: ModelAdapter
   /** Skill 模型调用使用的生成参数。 */
-  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens'>
+  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens' | 'timeoutMs'>
 }
 
 /** MVP handler 注册表。后续配置后台仍可以指向这些稳定的 handlerName。 */
@@ -180,7 +180,8 @@ async function executeModelSkill(
     ],
     temperature: options.modelOptions?.temperature ?? 0.1,
     topP: options.modelOptions?.topP ?? 0.8,
-    maxTokens: options.modelOptions?.maxTokens ?? 2048
+    maxTokens: options.modelOptions?.maxTokens ?? 2048,
+    timeoutMs: options.modelOptions?.timeoutMs
   })) {
     if (streamEvent.type === 'text_delta' && streamEvent.content) {
       rawContent += streamEvent.content

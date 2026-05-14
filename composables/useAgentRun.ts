@@ -48,7 +48,7 @@ export function useAgentRun() {
     }
   }
 
-  async function runMock() {
+  async function runAgent() {
     status.value = 'running'
     error.value = undefined
     events.value = []
@@ -83,7 +83,7 @@ export function useAgentRun() {
       }
     } catch (runError) {
       status.value = 'failed'
-      error.value = runError instanceof Error ? runError.message : 'Mock Agent Run failed'
+      error.value = getAgentRunErrorMessage(runError)
     }
   }
 
@@ -113,9 +113,22 @@ export function useAgentRun() {
     modelAnalysis,
     finalAnswer,
     error,
-    runMock,
+    runAgent,
     clearRun
   }
+}
+
+function getAgentRunErrorMessage(error: unknown) {
+  if (typeof error === 'object' && error && 'data' in error) {
+    const data = (error as { data?: { message?: unknown, statusMessage?: unknown } }).data
+    const message = data?.message ?? data?.statusMessage
+
+    if (typeof message === 'string' && message) {
+      return message
+    }
+  }
+
+  return error instanceof Error ? error.message : 'Agent Run failed'
 }
 
 export interface AgentRunPhase {

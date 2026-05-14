@@ -107,6 +107,7 @@ async function fetchArkChatCompletion(options: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${options.options.apiKey}`
     },
+    signal: createTimeoutSignal(options.request.timeoutMs),
     body: JSON.stringify(body)
   })
 
@@ -117,6 +118,14 @@ async function fetchArkChatCompletion(options: {
   }
 
   return response
+}
+
+function createTimeoutSignal(timeoutMs?: number) {
+  if (!timeoutMs || timeoutMs <= 0) {
+    return undefined
+  }
+
+  return AbortSignal.timeout(timeoutMs)
 }
 
 function toArkMessage(message: ModelMessage) {

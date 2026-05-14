@@ -24,7 +24,7 @@
       <span class="dot" aria-hidden="true"></span>
       Agent Run 正在启动。
     </p>
-    <p v-else>等待 Mock Agent Run。</p>
+    <p v-else>等待 Agent Run。</p>
   </section>
 </template>
 

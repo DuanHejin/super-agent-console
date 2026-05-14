@@ -5,22 +5,22 @@ interface OpenAgentStreamOptions {
   onEvent: (event: AgentEvent) => void
 }
 
-const defaultMockSseIntervalMs = 800
-const mockSseIntervalStorageKey = 'agent:sseIntervalMs'
+const defaultSseIntervalMs = 800
+const sseIntervalStorageKey = 'agent:sseIntervalMs'
 
 function normalizeIntervalMs(value: string | null) {
   const parsed = Number(value)
 
   if (!Number.isFinite(parsed)) {
-    return defaultMockSseIntervalMs
+    return defaultSseIntervalMs
   }
 
   return Math.min(Math.max(parsed, 100), 5000)
 }
 
-function resolveMockSseIntervalMs() {
+function resolveSseIntervalMs() {
   if (!import.meta.client) {
-    return defaultMockSseIntervalMs
+    return defaultSseIntervalMs
   }
 
   const urlIntervalMs = new URLSearchParams(window.location.search).get('sseIntervalMs')
@@ -29,7 +29,7 @@ function resolveMockSseIntervalMs() {
     return normalizeIntervalMs(urlIntervalMs)
   }
 
-  return normalizeIntervalMs(window.localStorage.getItem(mockSseIntervalStorageKey))
+  return normalizeIntervalMs(window.localStorage.getItem(sseIntervalStorageKey))
 }
 
 export function useSseStream() {
@@ -42,7 +42,7 @@ export function useSseStream() {
 
     try {
       const query = new URLSearchParams({
-        intervalMs: String(resolveMockSseIntervalMs())
+        intervalMs: String(resolveSseIntervalMs())
       })
       const response = await fetch(`/api/agent/runs/${options.runId}/events?${query}`, {
         method: 'GET',

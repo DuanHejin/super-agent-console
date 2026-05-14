@@ -138,6 +138,8 @@ export interface ModelRequest {
   temperature?: number
   topP?: number
   maxTokens?: number
+  /** 单次模型请求最大等待时间，超时后由适配器中断请求。 */
+  timeoutMs?: number
 }
 
 /** 标准非流式模型响应。 */

@@ -1,6 +1,7 @@
 import type { AgentEvent } from '../../../../../types/agent-event'
 import type { AgentRunStatus } from '../../../../../types/agent-run'
-import { createMockAgentRun, createRealAgentRunStream } from '../../../../services/agent-runtime'
+import { createDemoAgentRun, createRealAgentRunStream } from '../../../../services/agent-runtime'
+import { acquireActiveRun } from '../../../../services/active-run-guard'
 import {
   completePersistedMessageRun,
   persistAgentEvent,
@@ -57,7 +58,63 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const userActiveRun = acquireActiveRun({
+    key: `user:${run.userId}`,
+    runId: run.runId,
+    limit: runtimeConfig.concurrentRunsPerUser
+  })
+
+  if (!userActiveRun.allowed) {
+    logger.warn({
+      eventType: 'agent_run_concurrent_limited',
+      runId: run.runId,
+      userId: run.userId,
+      activeCount: userActiveRun.activeCount,
+      message: 'Agent Run SSE rejected by user concurrency limit'
+    })
+
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Too many active Agent Runs'
+    })
+  }
+
+  const globalActiveRun = acquireActiveRun({
+    key: 'global',
+    runId: run.runId,
+    limit: runtimeConfig.concurrentRunsGlobal
+  })
+
+  if (!globalActiveRun.allowed) {
+    userActiveRun.release()
+    logger.warn({
+      eventType: 'agent_run_concurrent_limited',
+      runId: run.runId,
+      userId: run.userId,
+      activeCount: globalActiveRun.activeCount,
+      message: 'Agent Run SSE rejected by global concurrency limit'
+    })
+
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Too many active Agent Runs'
+    })
+  }
+
   const res = event.node.res
+  let activeRunReleased = false
+
+  const releaseActiveRun = () => {
+    if (activeRunReleased) {
+      return
+    }
+
+    activeRunReleased = true
+    userActiveRun.release()
+    globalActiveRun.release()
+  }
+
+  res.once('close', releaseActiveRun)
 
   setResponseHeaders(event, {
     'content-type': 'text/event-stream; charset=utf-8',
@@ -116,7 +173,8 @@ export default defineEventHandler(async (event) => {
       modelApiKey: runtimeConfig.modelApiKey,
       temperature: runtimeConfig.modelTemperature,
       topP: runtimeConfig.modelTopP,
-      maxTokens: runtimeConfig.modelMaxTokens
+      maxTokens: runtimeConfig.modelMaxTokens,
+      timeoutMs: runtimeConfig.modelRequestTimeoutMs
     })
 
     logger.info({
@@ -136,7 +194,7 @@ export default defineEventHandler(async (event) => {
 
     finalAnswer = realStream.getFinalAnswer()
   } else {
-    const result = await createMockAgentRun({
+    const result = await createDemoAgentRun({
       input: run.input,
       conversationId: run.conversationId,
       messageId: run.messageId,
@@ -152,7 +210,7 @@ export default defineEventHandler(async (event) => {
       traceId: run.traceId,
       eventCount: result.events.length,
       intervalMs,
-      message: 'Mock Agent Run event stream started'
+      message: 'Demo Agent Run event stream started'
     })
 
     for (const agentEvent of result.events) {
@@ -207,4 +265,6 @@ export default defineEventHandler(async (event) => {
     status: finalStatus,
     message: 'Agent Run event stream completed'
   })
+
+  releaseActiveRun()
 })

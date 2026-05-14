@@ -8,8 +8,7 @@
       @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
     />
     <div class="actions">
-      <button type="button" :disabled="disabled" @click="emit('mockRun')">Mock Run</button>
-      <button type="button" disabled>Real Run</button>
+      <button type="button" :disabled="disabled" @click="emit('run')">发送</button>
       <button type="button" :disabled="disabled" @click="emit('clear')">Clear</button>
     </div>
   </section>
@@ -23,7 +22,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  mockRun: []
+  run: []
   clear: []
 }>()
 </script>

@@ -2,37 +2,24 @@
   <main class="page-shell">
     <section class="hero">
       <p class="eyebrow">Super Agent Console</p>
-      <h1>AI Agent 执行链路可视化工程 Demo</h1>
+      <h1>AI 求职准备 Agent</h1>
       <p class="intro">
-        当前阶段先完成 Nuxt 3 项目骨架、服务端健康检查和 Agent 模块边界，后续逐步接入 SSE、数据库、日志与部署链路。
+        输入岗位 JD 或面试目标后，系统会用大模型拆解岗位要求，调用工具和技能生成准备计划，并把 Agent 的分析、工具调用和最终回答实时展示出来。
       </p>
-      <nav class="quick-links">
+      <nav v-if="showDebugLinks" class="quick-links">
         <NuxtLink to="/runs">Run 列表</NuxtLink>
         <NuxtLink to="/conversations">Conversation 列表</NuxtLink>
       </nav>
     </section>
 
     <AgentConsole />
-
-    <section class="grid">
-      <article>
-        <h2>Agent Console</h2>
-        <p>后续这里会承载 JD 输入、Mock Run、Real Run、AI 流式输出和 Agent Timeline。</p>
-      </article>
-      <article>
-        <h2>Runtime Status</h2>
-        <p>健康检查接口已预留：<code>/api/health</code>、<code>/api/ready</code>、<code>/api/db-check</code>。</p>
-      </article>
-      <article>
-        <h2>Deployment Layer</h2>
-        <p>发布链路将通过 GitHub Actions 构建 GHCR 镜像，并滚动更新香港服务器上的 K3S Pod。</p>
-      </article>
-    </section>
   </main>
 </template>
 
 <script setup lang="ts">
 const runtimeConfig = useRuntimeConfig()
+const { data: authStatus } = await useFetch<{ authenticated: boolean, userId?: string, isAdmin: boolean }>('/api/auth/me')
+const showDebugLinks = computed(() => import.meta.dev || Boolean(authStatus.value?.isAdmin))
 
 onMounted(async () => {
   const publicConfig = {
@@ -102,29 +89,8 @@ h1 {
   text-decoration: none;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 40px;
-}
-
 .agent-console {
   margin-top: 40px;
-}
-
-article {
-  min-height: 156px;
-  padding: 22px;
-  border: 1px solid #dce3e6;
-  border-radius: 8px;
-  background: #fff;
-}
-
-h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-  letter-spacing: 0;
 }
 
 p {
@@ -134,10 +100,6 @@ p {
   word-break: break-word;
 }
 
-code {
-  color: #1d5f7a;
-}
-
 @media (max-width: 820px) {
   .page-shell {
     padding: 28px;
@@ -145,10 +107,6 @@ code {
 
   h1 {
     font-size: 34px;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>

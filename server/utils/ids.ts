@@ -27,3 +27,7 @@ export function createToolCallId() {
 export function createSkillRunId() {
   return `skill_run_${randomUUID()}`
 }
+
+export function createFeedbackId() {
+  return `feedback_${randomUUID()}`
+}

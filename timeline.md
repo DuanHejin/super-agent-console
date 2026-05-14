@@ -72,3 +72,12 @@
 - 优化 Agent Console 和复盘体验：将 Run 详情入口上移，新增 Conversation / Run 列表页，统一本地时间展示，并支持模型最终回答的轻量 Markdown 渲染。
 - 优化真实 tool call 事件语义，新增 `model_tool_call_decision` 事件区分工具规划和最终回答两个模型阶段，并将两个 Skill 调整为 `model` 类型，由 Skill 内部调用模型生成结构化 JSON。
 - 合并模型流式 token 事件粒度，避免 `model_text_delta`、`skill_progress_delta`、`final_answer_delta` 逐 token 落库导致单次 Run 事件过多；同时将 Markdown 渲染切换为 `showdown`。
+- 清理首页早期占位卡片区域，首页聚焦项目标题、列表入口和 Agent Console 主流程。
+- 新增访问码登录、httpOnly cookie 鉴权、Run 创建频控和输入长度限制，用于朋友试用阶段保护服务器资源和模型 token 消耗。
+- 清理前端 Mock Run 文案和早期独立 mock/run 接口，新增全局右下角反馈弹窗、反馈落库接口和回到顶部按钮，方便朋友试用后提交反馈意见。
+- 将首页 Run 列表和 Conversation 列表入口调整为本地开发环境直接展示、线上管理员访问码登录后展示，并让对应列表页和列表 API 对普通朋友访问码返回 404。
+- 登录页新增可选昵称字段，昵称写入签名 cookie，并在提交反馈时落到 Feedback 表，方便识别朋友试用反馈来源。
+- 调整首页标题和介绍文案，从工程搭建说明改为面向试用者的 AI 求职准备 Agent 产品说明。
+- 增加公网试用保护：登录失败 IP 频控、全站 Run 频控、单用户 / 全站并发 Run 限制、模型请求超时，以及 K3S 应用 Pod resources patch。
+- 新增 `MODEL_ENABLED` 模型防灾开关，关闭后网站基础功能保留，Run 创建直接返回模型关闭提示，避免继续消耗真实模型 token。
+- 新增 `docs/public-trial-safety.md`，汇总公网试用访问控制、频控并发、模型防灾开关、K3S 资源限制和人工验证步骤。

@@ -176,3 +176,17 @@ model IdempotencyRecord {
   @@unique([userId, clientRequestId])
   @@index([runId])
 }
+
+model Feedback {
+  id        String   @id @default(cuid()) @db.VarChar(64)
+  userId    String?  @db.VarChar(128)
+  nickname  String?  @db.VarChar(40)
+  content   String   @db.Text
+  contact   String?  @db.VarChar(255)
+  pageUrl   String?  @db.VarChar(512)
+  userAgent String?  @db.VarChar(512)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}

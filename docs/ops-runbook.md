@@ -104,6 +104,7 @@ Production runtime configuration is injected with:
 k8s/configmap.yaml
 k8s/secret.example.yaml
 k8s/deployment-env-patch.yaml
+k8s/deployment-resources-patch.yaml
 ```
 
 ConfigMap holds non-sensitive values.
@@ -116,6 +117,20 @@ Apply/update ConfigMap:
 kubectl apply -f k8s/configmap.yaml
 ```
 
+Emergency stop real model calls:
+
+```bash
+kubectl patch configmap super-agent-console-config -n default --type merge -p '{"data":{"MODEL_ENABLED":"false"}}'
+kubectl rollout restart deployment/my-web-app -n default
+```
+
+Restore model calls:
+
+```bash
+kubectl patch configmap super-agent-console-config -n default --type merge -p '{"data":{"MODEL_ENABLED":"true"}}'
+kubectl rollout restart deployment/my-web-app -n default
+```
+
 Create/update real Secret on the server:
 
 ```bash
@@ -123,6 +138,9 @@ kubectl create secret generic super-agent-console-secret \
   -n default \
   --from-literal=DATABASE_URL='replace-with-real-value' \
   --from-literal=MODEL_API_KEY='replace-with-real-value' \
+  --from-literal=ACCESS_CODES='replace-with-real-value' \
+  --from-literal=ADMIN_ACCESS_CODES='replace-with-real-value' \
+  --from-literal=AUTH_COOKIE_SECRET='replace-with-real-value' \
   --from-literal=DEMO_SERVER_TOKEN='replace-with-real-value' \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
@@ -132,6 +150,12 @@ Restart after ConfigMap or Secret changes:
 ```bash
 kubectl rollout restart deployment/my-web-app -n default
 kubectl rollout status deployment/my-web-app -n default
+```
+
+Apply resource requests / limits:
+
+```bash
+kubectl patch deployment my-web-app -n default --type='strategic' --patch-file k8s/deployment-resources-patch.yaml
 ```
 
 ## MySQL

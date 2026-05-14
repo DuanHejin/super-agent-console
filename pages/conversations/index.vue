@@ -54,6 +54,15 @@
 import type { ConversationListItem } from '../../types/agent-run'
 
 const { formatLocalDateTime } = useLocalDateTime()
+const { data: authStatus } = await useFetch<{ authenticated: boolean, userId?: string, isAdmin: boolean }>('/api/auth/me')
+
+if (!import.meta.dev && !authStatus.value?.isAdmin) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Page not found'
+  })
+}
+
 const { data, pending, error, refresh } = await useFetch<{ items: ConversationListItem[] }>('/api/conversations')
 const conversations = computed(() => data.value?.items ?? [])
 </script>

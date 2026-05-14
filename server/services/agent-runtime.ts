@@ -14,14 +14,14 @@ import { createMockModelAdapter } from './model-adapters'
 import { createModelAdapter } from './model-adapters/registry'
 import { executeTool } from './tool-executor'
 
-export interface MockAgentRunResult {
+export interface DemoAgentRunResult {
   runId: string
   traceId: string
   events: AgentEvent[]
   finalAnswer: string
 }
 
-interface RunMockAgentOptions {
+interface RunDemoAgentOptions {
   input: string
   conversationId?: string
   messageId?: string
@@ -29,7 +29,7 @@ interface RunMockAgentOptions {
   traceId?: string
 }
 
-export interface RunRealAgentOptions extends RunMockAgentOptions {
+export interface RunRealAgentOptions extends RunDemoAgentOptions {
   modelProvider: 'volcengine_ark'
   modelName: string
   modelBaseUrl: string
@@ -37,6 +37,7 @@ export interface RunRealAgentOptions extends RunMockAgentOptions {
   temperature: number
   topP: number
   maxTokens: number
+  timeoutMs: number
 }
 
 export interface AgentRunEventStream {
@@ -48,17 +49,11 @@ export interface AgentRunEventStream {
 
 const realAgentTools = toolDefinitions.filter((tool) => tool.name === 'analyzeJobAndGeneratePlan')
 
-export async function runMockAgent(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
-  const result = await createMockAgentRun(options)
-
-  return result
-}
-
 /**
  * 创建 MVP Agent 事件流。
  * runtime 负责事件序号和状态表达，Tool/Skill 执行委托给 Tool Executor。
  */
-export async function createMockAgentRun(options: RunMockAgentOptions): Promise<MockAgentRunResult> {
+export async function createDemoAgentRun(options: RunDemoAgentOptions): Promise<DemoAgentRunResult> {
   const conversationId = options.conversationId ?? createConversationId()
   const messageId = options.messageId ?? createMessageId()
   const runId = options.runId ?? createRunId()
@@ -94,12 +89,12 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
   const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
   const finalAnswer = [
     `已收到输入：${inputPreview}`,
-    '这是一次 Mock Agent Run，用于验证前端输入、服务端编排、Timeline 展示和运行元信息。',
+    '这是一次 Demo Agent Run，用于在未配置真实模型时验证前端输入、服务端编排、Timeline 展示和运行元信息。',
     '当前阶段已经可以通过 SSE 展示模型分析、Tool 调用、Skill 执行和最终答案。'
   ].join('\n')
   const finalAnswerChunks = [
     `已收到输入：${inputPreview}\n`,
-    '这是一次 Mock Agent Run，用于验证前端输入、服务端编排、Timeline 展示和运行元信息。\n',
+    '这是一次 Demo Agent Run，用于在未配置真实模型时验证前端输入、服务端编排、Timeline 展示和运行元信息。\n',
     '当前阶段已经通过 SSE 逐步推送事件。'
   ]
   const modelAnalysisChunks = [
@@ -118,29 +113,29 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
       data: {
         inputPreview
       },
-      message: 'Mock Agent Run started'
+      message: 'Demo Agent Run started'
     })
   )
   events.push(
     createEvent({
       eventType: 'prompt_loaded',
       status: 'model_calling',
-      name: 'mock-agent-default',
+      name: 'demo-agent-default',
       data: {
-        promptName: 'mock-agent-default'
+        promptName: 'demo-agent-default'
       },
-      message: 'Mock prompt loaded'
+      message: 'Demo prompt loaded'
     })
   )
   events.push(
     createEvent({
       eventType: 'model_call_start',
       status: 'model_calling',
-      name: 'mock-model',
+      name: 'demo-model',
       data: {
-        model: 'mock-model'
+        model: 'demo-model'
       },
-      message: 'Mock model call started'
+      message: 'Demo model call started'
     })
   )
 
@@ -152,12 +147,12 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
       createEvent({
         eventType: 'model_text_delta',
         status: 'model_calling',
-        name: 'mock-model',
+        name: 'demo-model',
         data: {
           content,
           offset: currentOffset
         },
-        message: 'Mock model analysis delta'
+        message: 'Demo model analysis delta'
       })
     )
   }
@@ -191,7 +186,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
         toolName: toolCall.name,
         args: toolCall.arguments
       },
-      message: 'Mock tool call started'
+      message: 'Demo tool call started'
     })
   )
 
@@ -211,7 +206,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
             offset: delta.offset,
             stage: delta.stage
           },
-          message: 'Mock tool progress delta'
+          message: 'Demo tool progress delta'
         })
       )
     },
@@ -228,7 +223,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
             skillName: skillExecution.skillName,
             input: skillExecution.input
           },
-          message: 'Mock skill started'
+          message: 'Demo skill started'
         })
       )
     },
@@ -247,7 +242,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
             offset: delta.offset,
             stage: delta.stage
           },
-          message: 'Mock skill progress delta'
+          message: 'Demo skill progress delta'
         })
       )
     },
@@ -264,7 +259,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
             skillName: skillExecution.skillName,
             result: skillExecution.result
           },
-          message: 'Mock skill finished'
+          message: 'Demo skill finished'
         })
       )
     }
@@ -280,7 +275,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
         toolName: toolExecution.tool.name,
         result: toolExecution.result
       },
-      message: 'Mock tool call finished'
+      message: 'Demo tool call finished'
     })
   )
 
@@ -296,7 +291,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
           content,
           offset: currentOffset
         },
-        message: 'Mock final answer delta'
+        message: 'Demo final answer delta'
       })
     )
   }
@@ -308,7 +303,7 @@ export async function createMockAgentRun(options: RunMockAgentOptions): Promise<
       data: {
         resultId: `result_${runId}`
       },
-      message: 'Mock Agent Run finished'
+      message: 'Demo Agent Run finished'
     })
   )
 
@@ -440,7 +435,8 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         tools: realAgentTools,
         temperature: options.temperature,
         topP: options.topP,
-        maxTokens: options.maxTokens
+        maxTokens: options.maxTokens,
+        timeoutMs: options.timeoutMs
       })) {
         if (streamEvent.type === 'text_delta' && streamEvent.content) {
           modelAnalysis += streamEvent.content
@@ -515,7 +511,8 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           modelOptions: {
             temperature: options.temperature,
             topP: options.topP,
-            maxTokens: options.maxTokens
+            maxTokens: options.maxTokens,
+            timeoutMs: options.timeoutMs
           },
           onToolProgress(delta) {
             toolEvents.push(
@@ -656,7 +653,8 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           ],
           temperature: options.temperature,
           topP: options.topP,
-          maxTokens: options.maxTokens
+          maxTokens: options.maxTokens,
+          timeoutMs: options.timeoutMs
         })) {
           if (streamEvent.type === 'text_delta' && streamEvent.content) {
             const event = flushFinalAnswer.push(streamEvent.content)

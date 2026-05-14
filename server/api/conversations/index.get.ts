@@ -1,8 +1,16 @@
 import { listPersistedConversations } from '../../services/run-persistence'
 import { listConversations } from '../../services/run-store'
+import { canReadDebugLists } from '../../utils/auth'
 import { logger } from '../../utils/logger'
 
 export default defineEventHandler(async (event) => {
+  if (!canReadDebugLists(event)) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'API not found'
+    })
+  }
+
   const query = getQuery(event)
   const limit = Math.min(Math.max(Number(query.limit) || 50, 1), 100)
 
