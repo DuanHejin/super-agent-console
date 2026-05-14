@@ -193,6 +193,12 @@ export async function createDemoAgentRun(options: RunDemoAgentOptions): Promise<
   const toolExecution = await executeTool({
     name: toolCall.name,
     args: toolCall.arguments,
+    model,
+    modelOptions: {
+      temperature: 0,
+      topP: 1,
+      maxTokens: 2048
+    },
     onToolProgress(delta) {
       events.push(
         createEvent({
