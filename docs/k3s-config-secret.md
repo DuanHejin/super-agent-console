@@ -2,6 +2,8 @@
 
 本项目当前通过环境变量读取运行配置。本地开发使用 `.env.local`，生产环境使用 K3S ConfigMap / Secret 注入同一组 key。
 
+服务端私有配置会优先读取无前缀环境变量，例如 `ACCESS_CODES`；同时兼容 Nuxt 生产运行时常见的 `NUXT_` 前缀写法，例如 `NUXT_ACCESS_CODES`。K3S 中推荐继续维护无前缀变量，代码会直接读取 `process.env`。
+
 ## 配置分组
 
 ConfigMap 保存非敏感配置：
@@ -89,6 +91,12 @@ kubectl rollout status deployment/my-web-app -n default
 ```bash
 kubectl exec -n default deploy/my-web-app -- printenv NUXT_PUBLIC_CONFIG_DEMO_TEXT
 kubectl exec -n default deploy/my-web-app -- printenv DEMO_SERVER_TOKEN
+```
+
+也可以访问就绪接口，查看脱敏后的配置加载状态和限频值：
+
+```bash
+curl http://127.0.0.1:3000/api/ready
 ```
 
 浏览器打开首页后，DevTools Console 应能看到：

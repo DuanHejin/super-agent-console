@@ -82,3 +82,4 @@
 - 新增 `MODEL_ENABLED` 模型防灾开关，关闭后网站基础功能保留，Run 创建直接返回模型关闭提示，避免继续消耗真实模型 token。
 - 新增 `docs/public-trial-safety.md`，汇总公网试用访问控制、频控并发、模型防灾开关、K3S 资源限制和人工验证步骤。
 - 新增管理员专用 Feedback 列表页和 `GET /api/feedback`，用于线上查看朋友试用反馈；普通访问码访问仍返回 404。
+- 修复 Nuxt 生产运行时私有配置读取问题，服务端配置优先读取 `process.env` 并兼容 `NUXT_` 前缀，同时扩展 `/api/ready` 返回脱敏配置状态和限频值。

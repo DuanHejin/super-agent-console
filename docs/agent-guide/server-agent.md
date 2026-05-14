@@ -35,13 +35,14 @@
 
 - 本地开发读取 `.env.local`，数据库优先连接本机 MySQL。
 - `npm run dev` 已通过 `nuxt dev --dotenv .env.local` 显式加载本地环境变量；如果缺少 `DATABASE_URL`，Prisma 落库会失败并回退到内存 run-store。
-- 生产配置优先通过 K3S ConfigMap / Secret 注入。
+- 生产配置优先通过 K3S ConfigMap / Secret 注入。服务端私有配置优先读取 `process.env.KEY`，再读取 `process.env.NUXT_KEY` / Nuxt runtimeConfig，避免生产构建后无前缀变量不生效。
 - 线上数据库连接 K3S 内部 MySQL Service：`mysql:3306`。
 - 真实模型接入优先使用通用 `MODEL_*` 变量：`MODEL_PROVIDER`、`MODEL_NAME`、`MODEL_BASE_URL`、`MODEL_API_KEY`、`MODEL_TEMPERATURE`、`MODEL_TOP_P`、`MODEL_MAX_TOKENS`。
 - `MODEL_ENABLED=false` 是真实模型防灾开关：关闭后网站、登录和反馈仍可用，但 `POST /api/conversations/messages` 会直接返回 503，不创建 Run、不打开 SSE、不消耗 token。
 - 本地接入火山方舟 Seed 2.0 Lite 时，将 `MODEL_PROVIDER` 设置为 `volcengine_ark`，`MODEL_NAME` 设置为方舟 curl 示例中 `model` 字段的值，例如 `doubao-seed-2-0-lite-260428`。
 - 朋友试用阶段使用访问码保护：`ACCESS_CODES`、`ADMIN_ACCESS_CODES` 和 `AUTH_COOKIE_SECRET` 放入 Secret；`MODEL_ENABLED`、`RUN_RATE_LIMIT_MINUTE`、`RUN_RATE_LIMIT_DAY`、`GLOBAL_RUN_RATE_LIMIT_MINUTE`、`GLOBAL_RUN_RATE_LIMIT_DAY`、`CONCURRENT_RUNS_PER_USER`、`CONCURRENT_RUNS_GLOBAL`、`AUTH_LOGIN_RATE_LIMIT_MINUTE`、`MODEL_REQUEST_TIMEOUT_MS`、`MAX_RUN_INPUT_LENGTH` 放入 ConfigMap。
 - 不要打印 API key、数据库密码或完整敏感环境变量值。
+- `/api/ready` 只返回脱敏后的配置加载状态、限频值和模型开关状态，可用于 K3S 排查环境变量是否生效。
 - `.env.example` 作为本地开发模板和 K3S 配置映射参考，`DATABASE_URL` 示例默认指向本机 MySQL dev 库。
 
 ## Agent 配置层

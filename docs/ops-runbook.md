@@ -131,6 +131,12 @@ kubectl patch configmap super-agent-console-config -n default --type merge -p '{
 kubectl rollout restart deployment/my-web-app -n default
 ```
 
+Check runtime config without exposing secrets:
+
+```bash
+kubectl exec -n default deploy/my-web-app -- node -e "fetch('http://127.0.0.1:3000/api/ready').then(r=>r.text()).then(console.log)"
+```
+
 Create/update real Secret on the server:
 
 ```bash
