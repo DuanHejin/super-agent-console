@@ -47,6 +47,8 @@ export interface AgentRunEventStream {
   getFinalAnswer(): string
 }
 
+type RealAgentPhase = 'agent_start' | 'tool_planning' | 'tool_execution' | 'final_answer'
+
 const realAgentTools = toolDefinitions.filter((tool) => tool.name === 'analyzeJobAndGeneratePlan')
 
 /**
@@ -333,6 +335,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
   let finalAnswerOffset = 0
   let modelTextOffset = 0
   let directAnswerOffset = 0
+  let currentPhase: RealAgentPhase = 'agent_start'
   const normalizedInput = options.input.trim()
   const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
   const model = createModelAdapter({
@@ -400,6 +403,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         },
         message: 'Real model tool planning stream started'
       })
+      currentPhase = 'tool_planning'
 
       const firstMessages: ModelMessage[] = [
         {
@@ -483,6 +487,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           })
         }
       } else {
+        currentPhase = 'tool_execution'
         yield createEvent({
           eventType: 'model_tool_call_decision',
           status: 'tool_calling',
@@ -619,6 +624,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           },
           message: 'Real model final answer stream started'
         })
+        currentPhase = 'final_answer'
 
         const flushFinalAnswer = createBufferedTextEmitter({
           emit(content) {
@@ -689,11 +695,19 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         message: 'Real Agent Run finished'
       })
     } catch (error) {
+      const normalizedError = normalizeRealAgentError(error)
+
       yield createEvent({
         eventType: 'agent_error',
         status: 'failed',
         data: {
-          errorMessage: error instanceof Error ? error.message : 'Real Agent Run failed'
+          errorMessage: normalizedError.message,
+          errorName: normalizedError.name,
+          isTimeout: normalizedError.isTimeout,
+          phase: currentPhase,
+          provider: options.modelProvider,
+          model: options.modelName,
+          requestTimeoutMs: options.timeoutMs
         },
         message: 'Real Agent Run failed'
       })
@@ -707,6 +721,21 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
     getFinalAnswer() {
       return finalAnswer
     }
+  }
+}
+
+function normalizeRealAgentError(error: unknown) {
+  const name = error instanceof Error ? error.name : 'UnknownError'
+  const message = error instanceof Error ? error.message : 'Real Agent Run failed'
+  const isTimeout =
+    name === 'TimeoutError' ||
+    name === 'AbortError' ||
+    /timeout|aborted/i.test(message)
+
+  return {
+    name,
+    message,
+    isTimeout
   }
 }
 

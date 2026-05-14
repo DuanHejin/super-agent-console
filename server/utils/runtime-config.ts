@@ -85,7 +85,7 @@ export function getAppRuntimeConfig() {
         modelRequestTimeoutMs: readRuntimeNumber(
             'MODEL_REQUEST_TIMEOUT_MS',
             config.modelRequestTimeoutMs,
-            60000,
+            180000,
         ),
         maxRunInputLength: readRuntimeNumber(
             'MAX_RUN_INPUT_LENGTH',
