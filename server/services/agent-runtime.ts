@@ -331,6 +331,7 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
   let finalAnswer = ''
   let finalAnswerOffset = 0
   let modelTextOffset = 0
+  let directAnswerOffset = 0
   const normalizedInput = options.input.trim()
   const inputPreview = normalizedInput.slice(0, 80) || '未提供输入'
   const model = createModelAdapter({
@@ -393,9 +394,10 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         name: options.modelName,
         data: {
           provider: options.modelProvider,
-          model: options.modelName
+          model: options.modelName,
+          phase: 'tool_planning'
         },
-        message: 'Real model stream started'
+        message: 'Real model tool planning stream started'
       })
 
       const firstMessages: ModelMessage[] = [
@@ -415,6 +417,23 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
       ]
       const toolCalls: ModelToolCall[] = []
       let modelAnalysis = ''
+      const flushModelAnalysis = createBufferedTextEmitter({
+        emit(content) {
+          const currentOffset = modelTextOffset
+          modelTextOffset += content.length
+
+          return createEvent({
+            eventType: 'model_text_delta',
+            status: 'model_calling',
+            name: options.modelName,
+            data: {
+              content,
+              offset: currentOffset
+            },
+            message: 'Real model analysis delta'
+          })
+        }
+      })
 
       for await (const streamEvent of model.stream({
         messages: firstMessages,
@@ -424,20 +443,12 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         maxTokens: options.maxTokens
       })) {
         if (streamEvent.type === 'text_delta' && streamEvent.content) {
-          const currentOffset = modelTextOffset
           modelAnalysis += streamEvent.content
-          modelTextOffset += streamEvent.content.length
+          const event = flushModelAnalysis.push(streamEvent.content)
 
-          yield createEvent({
-            eventType: 'model_text_delta',
-            status: 'model_calling',
-            name: options.modelName,
-            data: {
-              content: streamEvent.content,
-              offset: currentOffset
-            },
-            message: 'Real model analysis delta'
-          })
+          if (event) {
+            yield event
+          }
         }
 
         if (streamEvent.type === 'tool_call') {
@@ -445,11 +456,45 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         }
       }
 
+      const remainingModelAnalysisEvent = flushModelAnalysis.flush()
+
+      if (remainingModelAnalysisEvent) {
+        yield remainingModelAnalysisEvent
+      }
+
       const toolCall = toolCalls[0]
 
       if (!toolCall) {
         finalAnswer = modelAnalysis
+        if (modelAnalysis) {
+          directAnswerOffset = finalAnswerOffset
+          finalAnswerOffset += modelAnalysis.length
+          yield createEvent({
+            eventType: 'final_answer_delta',
+            status: 'generating',
+            name: options.modelName,
+            data: {
+              content: modelAnalysis,
+              offset: directAnswerOffset
+            },
+            message: 'Real model direct final answer'
+          })
+        }
       } else {
+        yield createEvent({
+          eventType: 'model_tool_call_decision',
+          status: 'tool_calling',
+          name: toolCall.name,
+          data: {
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            args: toolCall.arguments,
+            provider: options.modelProvider,
+            model: options.modelName
+          },
+          message: 'Real model decided to call tool'
+        })
+
         yield createEvent({
           eventType: 'tool_call_start',
           status: 'tool_calling',
@@ -466,6 +511,12 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
         const toolExecution = await executeTool({
           name: toolCall.name,
           args: toolCall.arguments,
+          model,
+          modelOptions: {
+            temperature: options.temperature,
+            topP: options.topP,
+            maxTokens: options.maxTokens
+          },
           onToolProgress(delta) {
             toolEvents.push(
               createEvent({
@@ -566,6 +617,25 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           message: 'Real model final answer stream started'
         })
 
+        const flushFinalAnswer = createBufferedTextEmitter({
+          emit(content) {
+            const currentOffset = finalAnswerOffset
+            finalAnswer += content
+            finalAnswerOffset += content.length
+
+            return createEvent({
+              eventType: 'final_answer_delta',
+              status: 'generating',
+              name: options.modelName,
+              data: {
+                content,
+                offset: currentOffset
+              },
+              message: 'Real model final answer delta'
+            })
+          }
+        })
+
         for await (const streamEvent of model.stream({
           messages: [
             ...firstMessages,
@@ -589,21 +659,18 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
           maxTokens: options.maxTokens
         })) {
           if (streamEvent.type === 'text_delta' && streamEvent.content) {
-            const currentOffset = finalAnswerOffset
-            finalAnswer += streamEvent.content
-            finalAnswerOffset += streamEvent.content.length
+            const event = flushFinalAnswer.push(streamEvent.content)
 
-            yield createEvent({
-              eventType: 'final_answer_delta',
-              status: 'generating',
-              name: options.modelName,
-              data: {
-                content: streamEvent.content,
-                offset: currentOffset
-              },
-              message: 'Real model final answer delta'
-            })
+            if (event) {
+              yield event
+            }
           }
+        }
+
+        const remainingFinalAnswerEvent = flushFinalAnswer.flush()
+
+        if (remainingFinalAnswerEvent) {
+          yield remainingFinalAnswerEvent
         }
       }
 
@@ -635,6 +702,36 @@ export function createRealAgentRunStream(options: RunRealAgentOptions): AgentRun
     events: events(),
     getFinalAnswer() {
       return finalAnswer
+    }
+  }
+}
+
+function createBufferedTextEmitter<TEvent>(options: {
+  minLength?: number
+  emit: (content: string) => TEvent
+}) {
+  const minLength = options.minLength ?? 240
+  let buffer = ''
+
+  return {
+    push(content: string): TEvent | undefined {
+      buffer += content
+
+      if (buffer.length >= minLength || /[。！？\n]$/.test(buffer)) {
+        return this.flush()
+      }
+
+      return undefined
+    },
+    flush(): TEvent | undefined {
+      if (!buffer) {
+        return undefined
+      }
+
+      const event = options.emit(buffer)
+      buffer = ''
+
+      return event
     }
   }
 }

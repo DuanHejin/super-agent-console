@@ -76,4 +76,5 @@
 - Agent runtime 事件必须使用统一 `AgentEvent` 协议，包含 `eventId`、`eventType`、`conversationId`、`messageId`、`runId`、`traceId`、`sequence`、`status`、`timestamp` 和 `data`，方便前端 Timeline、日志和未来数据库记录关联。
 - `eventType` 表示“发生了什么”，`status` 表示“当前 Run 处于什么状态”，不要混用。
 - Agent 过程必须整体流式展示，不只推最终答案：模型分析使用 `model_text_delta`，Tool 中间态输出使用 `tool_progress_delta`，Skill 中间态输出使用 `skill_progress_delta`，Skill 输入放在 `skill_start.data.input`，Skill 输出放在 `skill_result.data.result`，最终答案分片使用 `final_answer_delta`。
-- 真实模型 tool call 链路为：首次模型流式请求携带 Tool Schema，模型返回 `tool_call` 后由服务端执行 Tool Router 和 Skill workflow，再将 Tool Result 作为 `tool` 消息回填给模型，第二次模型流式请求生成最终答案。
+- 真实模型 tool call 链路为：首次模型流式请求携带 Tool Schema，并用 `model_call_start.data.phase = tool_planning` 标识工具规划阶段；模型返回 `tool_call` 后推送 `model_tool_call_decision`，再由服务端执行 Tool Router 和 Skill workflow；Skill 当前配置为 `mode: model`，会在 Skill 内部调用模型生成结构化 JSON；最后将 Tool Result 作为 `tool` 消息回填给模型，第二次模型流式请求生成最终答案。
+- 模型流式 token 不应逐 token 落成 AgentEvent。服务端需要将 `model_text_delta`、`skill_progress_delta`、`final_answer_delta` 按文本长度或句子边界做批量合并，避免一次 Run 生成过多事件，影响 Run 详情检索和数据库存储。

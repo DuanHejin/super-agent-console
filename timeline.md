@@ -70,3 +70,5 @@
 - 清理旧 `ARK_*` runtime 字段和旧 `doubao` adapter 骨架，统一使用 `MODEL_*` 配置表达模型平台、具体模型和鉴权信息。
 - 接入真实模型 tool call 闭环：火山方舟请求携带 Tool Schema，流式解析模型返回的 tool call，服务端执行 Tool Router / Skill workflow，并将 Tool Result 回填给模型生成最终答案。
 - 优化 Agent Console 和复盘体验：将 Run 详情入口上移，新增 Conversation / Run 列表页，统一本地时间展示，并支持模型最终回答的轻量 Markdown 渲染。
+- 优化真实 tool call 事件语义，新增 `model_tool_call_decision` 事件区分工具规划和最终回答两个模型阶段，并将两个 Skill 调整为 `model` 类型，由 Skill 内部调用模型生成结构化 JSON。
+- 合并模型流式 token 事件粒度，避免 `model_text_delta`、`skill_progress_delta`、`final_answer_delta` 逐 token 落库导致单次 Run 事件过多；同时将 Markdown 渲染切换为 `showdown`。

@@ -3,7 +3,8 @@
     <header class="panel-header">
       <div>
         <h2>Tool / Skill Process</h2>
-        <p>实时展示 Tool 参数、Skill 输入输出和 Tool 返回结果。</p>
+        <p v-if="status === 'running'">{{ phase?.label || '运行中' }}：{{ phase?.detail || 'Agent Run 正在执行。' }}</p>
+        <p v-else>实时展示 Tool 参数、Skill 输入输出和 Tool 返回结果。</p>
       </div>
       <span v-if="status === 'running'" class="running-dot" aria-hidden="true"></span>
     </header>
@@ -47,10 +48,12 @@
 
 <script setup lang="ts">
 import type { ToolProcessView } from '../composables/useToolSkillProcess'
+import type { AgentRunPhase } from '../composables/useAgentRun'
 
 defineProps<{
   tools: ToolProcessView[]
   status: 'idle' | 'running' | 'success' | 'failed'
+  phase?: AgentRunPhase
 }>()
 
 function getStatusText(status: ToolProcessView['status']) {
@@ -94,6 +97,17 @@ p {
   margin-top: 6px;
   border-radius: 999px;
   background: #2563eb;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status-badge.running::before {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
   animation: pulse 1s ease-in-out infinite;
 }
 

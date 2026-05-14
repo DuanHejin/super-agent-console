@@ -18,14 +18,17 @@
       :content="finalAnswer"
       :error="error"
       :status="status"
+      :phase="currentPhase"
     />
     <ToolCallCard
       :tools="toolProcesses"
       :status="status"
+      :phase="currentPhase"
     />
     <AgentTimeline
       :events="events"
       :status="status"
+      :phase="currentPhase"
     />
   </section>
 </template>
@@ -40,6 +43,7 @@ const {
   input,
   events,
   toolProcesses,
+  currentPhase,
   modelAnalysis,
   finalAnswer,
   error,

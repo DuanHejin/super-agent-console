@@ -1,4 +1,4 @@
-import type { SkillDefinition } from '../agent-config'
+import type { ModelAdapter, ModelRequest, SkillDefinition } from '../agent-config'
 import { getSkillDefinition } from '../agent-config'
 import { validateJsonSchema } from './schema-validator'
 
@@ -35,6 +35,10 @@ export interface ExecuteSkillResult {
 export interface ExecuteSkillOptions {
   /** Skill 内部产生中间态输出时触发。 */
   onProgress?: (delta: SkillProgressDelta) => void
+  /** Skill 为 model 模式时使用的模型适配器。 */
+  model?: ModelAdapter
+  /** Skill 模型调用使用的生成参数。 */
+  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens'>
 }
 
 /** MVP handler 注册表。后续配置后台仍可以指向这些稳定的 handlerName。 */
@@ -101,17 +105,10 @@ export async function executeSkill(
     throw new Error(`Invalid Skill input: ${inputValidation.errors.join('; ')}`)
   }
 
-  const handler = skillHandlers[skill.execution.handlerName]
+  const result = skill.execution.mode === 'model'
+    ? await executeModelSkill(skill, input, options)
+    : await executeHandlerSkill(skill, input, options)
 
-  if (!handler) {
-    throw new Error(`Skill handler ${skill.execution.handlerName} is not implemented.`)
-  }
-
-  const result = await handler(input, {
-    emitProgress(delta) {
-      options.onProgress?.(delta)
-    }
-  })
   const outputValidation = validateJsonSchema(skill.outputSchema, result, `skill.${skillName}.output`)
 
   if (!outputValidation.valid) {
@@ -123,6 +120,78 @@ export async function executeSkill(
     input,
     result
   }
+}
+
+async function executeHandlerSkill(
+  skill: SkillDefinition,
+  input: Record<string, unknown>,
+  options: ExecuteSkillOptions
+) {
+  const handler = skillHandlers[skill.execution.handlerName]
+
+  if (!handler) {
+    throw new Error(`Skill handler ${skill.execution.handlerName} is not implemented.`)
+  }
+
+  return handler(input, {
+    emitProgress(delta) {
+      options.onProgress?.(delta)
+    }
+  })
+}
+
+async function executeModelSkill(
+  skill: SkillDefinition,
+  input: Record<string, unknown>,
+  options: ExecuteSkillOptions
+) {
+  if (!options.model) {
+    throw new Error(`Skill ${skill.name} uses model mode but no ModelAdapter was provided.`)
+  }
+
+  const emitProgress = createSkillProgressEmitter((delta) => options.onProgress?.(delta))
+  const emitModelOutput = createBufferedTextEmitter({
+    emit(content) {
+      emitProgress(content, 'model-output')
+    }
+  })
+  emitProgress(`Skill ${skill.name} 正在调用模型生成结构化结果。\n`, 'model-call-start')
+  let rawContent = ''
+
+  for await (const streamEvent of options.model.stream({
+    messages: [
+      {
+        role: 'system',
+        content: [
+          '你是 Super Agent Console 的 Skill 执行器。',
+          '你必须只输出一个 JSON 对象，不要输出 Markdown，不要输出解释。',
+          '输出必须满足给定的 outputSchema。'
+        ].join('\n')
+      },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          skillName: skill.name,
+          description: skill.description,
+          input,
+          outputSchema: skill.outputSchema
+        })
+      }
+    ],
+    temperature: options.modelOptions?.temperature ?? 0.1,
+    topP: options.modelOptions?.topP ?? 0.8,
+    maxTokens: options.modelOptions?.maxTokens ?? 2048
+  })) {
+    if (streamEvent.type === 'text_delta' && streamEvent.content) {
+      rawContent += streamEvent.content
+      emitModelOutput.push(streamEvent.content)
+    }
+  }
+
+  emitModelOutput.flush()
+  emitProgress(`\nSkill ${skill.name} 模型调用完成，正在解析 JSON 输出。\n`, 'model-call-finished')
+
+  return parseModelJsonObject(rawContent)
 }
 
 /** Mock JD 提取 Skill 使用的简单确定性匹配函数。 */
@@ -149,5 +218,55 @@ function createSkillProgressEmitter(emitProgress: (delta: SkillProgressDelta) =>
     }
 
     emitProgress(delta)
+  }
+}
+
+function parseModelJsonObject(content: string): Record<string, unknown> {
+  const normalizedContent = content.trim()
+  const fencedJson = /```(?:json)?\s*([\s\S]*?)```/i.exec(normalizedContent)?.[1]?.trim()
+  const jsonCandidate = fencedJson ?? extractJsonObjectText(normalizedContent)
+  const parsed = JSON.parse(jsonCandidate) as unknown
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Model Skill output must be a JSON object.')
+  }
+
+  return parsed as Record<string, unknown>
+}
+
+function extractJsonObjectText(content: string) {
+  const start = content.indexOf('{')
+  const end = content.lastIndexOf('}')
+
+  if (start < 0 || end < start) {
+    throw new Error('Model Skill output does not contain a JSON object.')
+  }
+
+  return content.slice(start, end + 1)
+}
+
+function createBufferedTextEmitter(options: {
+  minLength?: number
+  emit: (content: string) => void
+}) {
+  const minLength = options.minLength ?? 240
+  let buffer = ''
+
+  return {
+    push(content: string) {
+      buffer += content
+
+      if (buffer.length >= minLength || /[。！？\n]$/.test(buffer)) {
+        this.flush()
+      }
+    },
+    flush() {
+      if (!buffer) {
+        return
+      }
+
+      options.emit(buffer)
+      buffer = ''
+    }
   }
 }

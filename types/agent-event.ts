@@ -6,6 +6,7 @@ export type AgentEventType =
   | 'prompt_loaded'
   | 'model_call_start'
   | 'model_text_delta'
+  | 'model_tool_call_decision'
   | 'tool_call_start'
   | 'tool_progress_delta'
   | 'skill_start'

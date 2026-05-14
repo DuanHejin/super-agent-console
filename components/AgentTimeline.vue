@@ -1,6 +1,10 @@
 <template>
   <section class="panel">
     <h2>Timeline</h2>
+    <p v-if="status === 'running'" class="phase-line">
+      <span class="dot" aria-hidden="true"></span>
+      {{ phase?.label || '运行中' }}：{{ phase?.detail || 'Agent Run 正在执行。' }}
+    </p>
     <ol v-if="events.length">
       <li v-for="event in events" :key="`${event.sequence}-${event.eventType}`">
         <strong>{{ event.sequence }}. {{ event.eventType }}</strong>
@@ -26,15 +30,19 @@
 
 <script setup lang="ts">
 import type { AgentEvent } from '../types/agent-event'
+import type { AgentRunPhase } from '../composables/useAgentRun'
 
 defineProps<{
   events: AgentEvent[]
   status: 'idle' | 'running' | 'success' | 'failed'
+  phase?: AgentRunPhase
 }>()
 
 const { formatLocalDateTime } = useLocalDateTime()
 
 const detailedEventTypes = new Set<AgentEvent['eventType']>([
+  'model_call_start',
+  'model_tool_call_decision',
   'tool_call_start',
   'tool_progress_delta',
   'skill_start',
@@ -116,10 +124,15 @@ p {
   color: #526068;
 }
 
-.loading-line {
+.loading-line,
+.phase-line {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.phase-line {
+  margin-bottom: 12px;
 }
 
 .dot {

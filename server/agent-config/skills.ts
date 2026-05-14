@@ -42,7 +42,7 @@ export const skillDefinitions = [
       required: ['requiredSkills', 'bonusSkills', 'responsibilities', 'riskPoints']
     },
     execution: {
-      mode: 'mock',
+      mode: 'model',
       handlerName: 'extractJobRequirements'
     }
   },
@@ -86,7 +86,7 @@ export const skillDefinitions = [
       required: ['days']
     },
     execution: {
-      mode: 'mock',
+      mode: 'model',
       handlerName: 'generateSevenDayPlan'
     }
   }

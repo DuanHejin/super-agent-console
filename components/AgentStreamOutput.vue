@@ -1,13 +1,12 @@
 <template>
   <section class="panel">
     <h2>AI Output</h2>
-    <p v-if="status === 'running' && !analysisContent && !content">Agent 正在建立 SSE 连接。</p>
+    <div v-if="status === 'running'" class="loading-line">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>{{ phase.label }}：{{ phase.detail }}</span>
+    </div>
     <p v-else-if="error" class="error">{{ error }}</p>
     <div v-else-if="analysisContent || content">
-      <div v-if="status === 'running'" class="loading-line">
-        <span class="spinner" aria-hidden="true"></span>
-        <span>Agent 正在生成</span>
-      </div>
       <section v-if="analysisContent" class="stream-block">
         <h3>Model Analysis</h3>
         <pre>{{ analysisContent }}</pre>
@@ -22,11 +21,14 @@
 </template>
 
 <script setup lang="ts">
+import type { AgentRunPhase } from '../composables/useAgentRun'
+
 defineProps<{
   analysisContent: string
   content: string
   error?: string
   status: 'idle' | 'running' | 'success' | 'failed'
+  phase: AgentRunPhase
 }>()
 </script>
 

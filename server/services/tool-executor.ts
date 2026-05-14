@@ -1,4 +1,4 @@
-import type { ToolDefinition } from '../agent-config'
+import type { ModelAdapter, ModelRequest, ToolDefinition } from '../agent-config'
 import { getToolWorkflowByToolName } from '../agent-config/workflows'
 import { createSkillRunId } from '../utils/ids'
 import type { SkillProgressDelta } from './skill-executor'
@@ -51,6 +51,10 @@ export interface ExecuteToolOptions {
   name: string
   /** 模型返回的 Tool 参数。 */
   args: Record<string, unknown>
+  /** 传给 model 类型 Skill 的模型适配器。 */
+  model?: ModelAdapter
+  /** 传给 model 类型 Skill 的生成参数。 */
+  modelOptions?: Pick<ModelRequest, 'temperature' | 'topP' | 'maxTokens'>
   /** Tool 编排层产生中间态输出时触发，用于推送 `tool_progress_delta`。 */
   onToolProgress?: (delta: ToolProgressDelta) => void
   /** 执行 Skill 前给 Agent Runtime 的回调，用于推送 `skill_start`。 */
@@ -109,6 +113,8 @@ export async function executeTool(options: ExecuteToolOptions): Promise<ToolExec
     emitToolProgress(`开始执行 Skill：${step.skillName}。\n`, 'skill-start')
 
     const skillResult = await executeSkill(step.skillName, input, {
+      model: options.model,
+      modelOptions: options.modelOptions,
       onProgress(delta) {
         options.onSkillProgress?.(skillStartExecution, delta)
       }
