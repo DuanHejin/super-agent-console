@@ -89,3 +89,10 @@
 
 - 排查真实模型线上 Run 失败问题，确认 `model_call_start` 到 `agent_error` 间隔命中 `MODEL_REQUEST_TIMEOUT_MS`；增强 `agent_error` 结构化日志，输出 `phase`、`errorMessage`、`isTimeout` 和 `requestTimeoutMs`，并将模型请求超时示例值调整为 180 秒。
 - 新增国内轻量服务器 + 腾讯云 TCR 迁移预案，记录从香港 K3S/GHCR 切换到国内 K3S/TCR 的备案、服务器初始化、镜像仓库、GitHub Actions、MySQL 数据、HTTPS、CLS 和回滚步骤。
+
+## 2026-05-15
+
+- 基于个人简历和上家公司项目总结，新增 Super Agent Console Demo 面试介绍文档，梳理项目定位、架构链路、核心亮点、可复述话术、简历写法和后续优化方向。
+- 基于原版简历和上家公司项目总结，整理新版中文简历，补充 PagePop AI 内容创作平台、简篇/美篇内容体系、BIZ 平台、鸿蒙端、内部基础库和 Super Agent Console 个人项目经历。
+- 根据上家公司工作内容自述继续完善新版简历，补充高流量 H5 详情页、TCR/TKE 排障、COS 日志、资源迁移、海外 Nuxt 3 AI 项目、鸿蒙负责人经历和早期项目压缩小节。
+- 按 AI Agent 应用全栈工程师（偏前端）/ AI 前端 / Agent 工程化方向重写新版简历，压缩早期经历，突出最近公司 AI 流式交互、高流量 C 端产品、鸿蒙交付和 Super Agent Console 个人项目。
