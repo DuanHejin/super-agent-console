@@ -96,3 +96,8 @@
 - 基于原版简历和上家公司项目总结，整理新版中文简历，补充 PagePop AI 内容创作平台、简篇/美篇内容体系、BIZ 平台、鸿蒙端、内部基础库和 Super Agent Console 个人项目经历。
 - 根据上家公司工作内容自述继续完善新版简历，补充高流量 H5 详情页、TCR/TKE 排障、COS 日志、资源迁移、海外 Nuxt 3 AI 项目、鸿蒙负责人经历和早期项目压缩小节。
 - 按 AI Agent 应用全栈工程师（偏前端）/ AI 前端 / Agent 工程化方向重写新版简历，压缩早期经历，突出最近公司 AI 流式交互、高流量 C 端产品、鸿蒙交付和 Super Agent Console 个人项目。
+
+## 2026-06-01
+
+- 新增 `docs/public-articles/super-agent-console-series/` 公开文章临时收纳目录，预先建立 18 篇文章的公众号、知乎、掘金三端 Markdown 占位文件，方便后续手动粘贴内容并统一重命名归档。
+- 整理 Super Agent Console 公开文章系列，将 18 篇文章目录从临时编号改为主题 slug，并把原 `images/00` 到 `images/17` 的配图归入对应文章目录。
